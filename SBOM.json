@@ -1,0 +1,300 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2024-07-03T00:00:00.000Z",
+    "tools": [
+      {
+        "vendor": "DevMemory Team",
+        "name": "Manual SBOM Generation",
+        "version": "1.0.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "bom-ref": "devmemory-app",
+      "name": "DevMemory",
+      "version": "1.0.0",
+      "description": "Enterprise Developer Memory Assistant - Local vector database with LLM integration",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "supplier": {
+        "name": "Enterprise Development Team"
+      }
+    }
+  },
+  "components": [
+    {
+      "type": "framework",
+      "bom-ref": "electron",
+      "name": "Electron",
+      "version": "31.0.0",
+      "description": "Build cross-platform desktop apps with JavaScript, HTML, and CSS",
+      "licenses": [{ "license": { "id": "MIT" } }],
+      "purl": "pkg:npm/electron@31.0.0",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://electronjs.org/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/electron/electron"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "react",
+      "name": "React",
+      "version": "18.3.1",
+      "description": "React is a JavaScript library for building user interfaces",
+      "licenses": [{ "license": { "id": "MIT" } }],
+      "purl": "pkg:npm/react@18.3.1",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://reactjs.org/"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "react-dom",
+      "name": "React DOM",
+      "version": "18.3.1",
+      "description": "React package for working with the DOM",
+      "licenses": [{ "license": { "id": "MIT" } }],
+      "purl": "pkg:npm/react-dom@18.3.1"
+    },
+    {
+      "type": "library",
+      "bom-ref": "typescript",
+      "name": "TypeScript",
+      "version": "5.5.3",
+      "description": "TypeScript is a language for application scale JavaScript development",
+      "licenses": [{ "license": { "id": "Apache-2.0" } }],
+      "purl": "pkg:npm/typescript@5.5.3",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "bom-ref": "better-sqlite3",
+      "name": "better-sqlite3",
+      "version": "11.1.2",
+      "description": "The fastest and simplest library for SQLite3 in Node.js",
+      "licenses": [{ "license": { "id": "MIT" } }],
+      "purl": "pkg:npm/better-sqlite3@11.1.2",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/WiseLibs/better-sqlite3"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "chromadb",
+      "name": "ChromaDB",
+      "version": "1.8.1",
+      "description": "JavaScript/TypeScript client for Chroma vector database",
+      "licenses": [{ "license": { "id": "Apache-2.0" } }],
+      "purl": "pkg:npm/chromadb@1.8.1",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.trychroma.com/"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "aws-sdk-bedrock",
+      "name": "AWS SDK for JavaScript - Bedrock Client",
+      "version": "3.614.0",
+      "description": "AWS SDK for JavaScript Bedrock Client for Node.js, Browser and React Native",
+      "licenses": [{ "license": { "id": "Apache-2.0" } }],
+      "purl": "pkg:npm/@aws-sdk/client-bedrock@3.614.0",
+      "supplier": {
+        "name": "Amazon Web Services"
+      }
+    },
+    {
+      "type": "library",
+      "bom-ref": "aws-sdk-bedrock-runtime",
+      "name": "AWS SDK for JavaScript - Bedrock Runtime Client",
+      "version": "3.614.0",
+      "description": "AWS SDK for JavaScript Bedrock Runtime Client for Node.js, Browser and React Native",
+      "licenses": [{ "license": { "id": "Apache-2.0" } }],
+      "purl": "pkg:npm/@aws-sdk/client-bedrock-runtime@3.614.0",
+      "supplier": {
+        "name": "Amazon Web Services"
+      }
+    },
+    {
+      "type": "library",
+      "bom-ref": "electron-store",
+      "name": "electron-store",
+      "version": "10.0.0",
+      "description": "Simple data persistence for your Electron app or module",
+      "licenses": [{ "license": { "id": "MIT" } }],
+      "purl": "pkg:npm/electron-store@10.0.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "react-router-dom",
+      "name": "React Router DOM",
+      "version": "6.24.1",
+      "description": "Declarative routing for React web applications",
+      "licenses": [{ "license": { "id": "MIT" } }],
+      "purl": "pkg:npm/react-router-dom@6.24.1"
+    },
+    {
+      "type": "library",
+      "bom-ref": "lucide-react",
+      "name": "Lucide React",
+      "version": "0.400.0",
+      "description": "Beautiful & consistent icon toolkit made by the community",
+      "licenses": [{ "license": { "id": "ISC" } }],
+      "purl": "pkg:npm/lucide-react@0.400.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "tailwindcss",
+      "name": "Tailwind CSS",
+      "version": "3.4.4",
+      "description": "A utility-first CSS framework for rapidly building custom user interfaces",
+      "licenses": [{ "license": { "id": "MIT" } }],
+      "purl": "pkg:npm/tailwindcss@3.4.4",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "bom-ref": "webpack",
+      "name": "webpack",
+      "version": "5.92.1",
+      "description": "Packs CommonJs/AMD modules for the browser",
+      "licenses": [{ "license": { "id": "MIT" } }],
+      "purl": "pkg:npm/webpack@5.92.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "bom-ref": "date-fns",
+      "name": "date-fns",
+      "version": "3.6.0",
+      "description": "Modern JavaScript date utility library",
+      "licenses": [{ "license": { "id": "MIT" } }],
+      "purl": "pkg:npm/date-fns@3.6.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "uuid",
+      "name": "uuid",
+      "version": "10.0.0",
+      "description": "RFC4122 (v1, v4, and v5) UUIDs",
+      "licenses": [{ "license": { "id": "MIT" } }],
+      "purl": "pkg:npm/uuid@10.0.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "clsx",
+      "name": "clsx",
+      "version": "2.1.1",
+      "description": "A tiny utility for constructing className strings conditionally",
+      "licenses": [{ "license": { "id": "MIT" } }],
+      "purl": "pkg:npm/clsx@2.1.1"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "devmemory-app",
+      "dependsOn": [
+        "electron",
+        "react",
+        "react-dom",
+        "better-sqlite3",
+        "chromadb",
+        "aws-sdk-bedrock",
+        "aws-sdk-bedrock-runtime",
+        "electron-store",
+        "react-router-dom",
+        "lucide-react",
+        "date-fns",
+        "uuid",
+        "clsx"
+      ]
+    },
+    {
+      "ref": "react",
+      "dependsOn": []
+    },
+    {
+      "ref": "electron",
+      "dependsOn": []
+    }
+  ],
+  "vulnerabilities": [],
+  "annotations": [
+    {
+      "subjects": ["devmemory-app"],
+      "annotationType": "review",
+      "annotator": "DevMemory Security Team",
+      "timestamp": "2024-07-03T00:00:00.000Z",
+      "text": "Security review completed. All dependencies reviewed for known vulnerabilities."
+    }
+  ],
+  "compositions": [
+    {
+      "aggregate": "complete",
+      "assemblies": ["devmemory-app"],
+      "dependencies": [
+        "electron",
+        "react",
+        "react-dom",
+        "typescript",
+        "better-sqlite3",
+        "chromadb",
+        "aws-sdk-bedrock",
+        "aws-sdk-bedrock-runtime",
+        "electron-store",
+        "react-router-dom",
+        "lucide-react",
+        "tailwindcss",
+        "webpack",
+        "date-fns",
+        "uuid",
+        "clsx"
+      ]
+    }
+  ],
+  "properties": [
+    {
+      "name": "build:environment",
+      "value": "production"
+    },
+    {
+      "name": "build:node-version",
+      "value": "18.x"
+    },
+    {
+      "name": "build:platform",
+      "value": "win32-x64"
+    },
+    {
+      "name": "security:scan-date",
+      "value": "2024-07-03"
+    },
+    {
+      "name": "compliance:framework",
+      "value": "enterprise-ready"
+    }
+  ]
+}

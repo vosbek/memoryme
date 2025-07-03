@@ -1,0 +1,99 @@
+name: Build DevMemory
+
+on:
+  push:
+    tags: ['v*']
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+    
+    - name: Install system dependencies (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libnss3-dev libatk-bridge2.0-dev libdrm2-dev libxcomposite-dev libxdamage-dev libxrandr-dev libgbm-dev libxss1-dev libasound2-dev
+    
+    - name: Install Node.js dependencies
+      run: npm ci
+    
+    - name: Install Python dependencies
+      run: pip install chromadb
+    
+    - name: Lint code
+      run: npm run lint
+    
+    - name: Run tests
+      run: npm test
+    
+    - name: Build application
+      run: npm run build
+    
+    - name: Build packages
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          npm run package:win
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          npm run package:mac
+        else
+          npm run package:linux
+        fi
+      shell: bash
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: DevMemory-${{ matrix.os }}
+        path: dist-electron/
+        retention-days: 30
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: dist/
+    
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/DevMemory-windows-latest/DevMemory-Setup-*.exe
+          dist/DevMemory-macos-latest/DevMemory-*.dmg
+          dist/DevMemory-ubuntu-latest/DevMemory-*.AppImage
+          dist/DevMemory-ubuntu-latest/DevMemory-*.deb
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

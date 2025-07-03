@@ -1,0 +1,138 @@
+{
+  "name": "devmemory",
+  "version": "1.0.0",
+  "description": "Enterprise Developer Memory Assistant - Local vector database with LLM integration",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:electron\" \"npm run dev:react\"",
+    "dev:electron": "cross-env NODE_ENV=development electron .",
+    "dev:react": "webpack serve --config webpack.renderer.config.js --mode development",
+    "build": "npm run build:react && npm run build:electron",
+    "build:react": "webpack --config webpack.renderer.config.js --mode production",
+    "build:electron": "webpack --config webpack.main.config.js --mode production",
+    "package": "electron-builder",
+    "package:win": "electron-builder --win",
+    "package:mac": "electron-builder --mac",
+    "package:linux": "electron-builder --linux",
+    "dist": "npm run build && npm run package",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "jest",
+    "clean": "rimraf dist dist-electron node_modules/.cache",
+    "rebuild": "npm run clean && npm install"
+  },
+  "keywords": [
+    "electron",
+    "developer-tools",
+    "memory",
+    "vector-database",
+    "llm",
+    "knowledge-management"
+  ],
+  "author": "Enterprise Developer",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^7.15.0",
+    "@typescript-eslint/parser": "^7.15.0",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "css-loader": "^7.1.2",
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "@eslint/js": "^9.7.0",
+    "eslint": "^9.7.0",
+    "eslint-plugin-react": "^7.34.3",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "html-webpack-plugin": "^5.6.0",
+    "jest": "^29.7.0",
+    "postcss": "^8.4.39",
+    "postcss-loader": "^8.1.1",
+    "style-loader": "^4.0.0",
+    "tailwindcss": "^3.4.4",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.5.3",
+    "webpack": "^5.92.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.4",
+    "rimraf": "^5.0.7"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock": "^3.614.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.614.0",
+    "chromadb": "^1.8.1",
+    "better-sqlite3": "^11.1.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.24.1",
+    "lucide-react": "^0.400.0",
+    "clsx": "^2.1.1",
+    "date-fns": "^3.6.0",
+    "uuid": "^10.0.0",
+    "@types/uuid": "^10.0.0",
+    "electron-store": "^10.0.0"
+  },
+  "build": {
+    "appId": "com.enterprise.devmemory",
+    "productName": "DevMemory",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets",
+        "filter": ["**/*"]
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "assets/icon.icns"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "artifactName": "DevMemory-Setup-${version}.${ext}",
+      "publisherName": "Enterprise Development Team"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "Development",
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DevMemory"
+    }
+  }
+}
