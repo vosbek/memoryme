@@ -1,17 +1,22 @@
 import Database from 'better-sqlite3';
 import { Memory, MemoryType, MemoryMetadata } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { createLogger } from '../utils/logger';
 
 export class SQLiteManager {
   private db: Database.Database;
+  private logger = createLogger('SQLiteManager');
 
   constructor(dbPath: string) {
+    this.logger.info('Initializing SQLite database', { dbPath });
     try {
       this.db = new Database(dbPath);
+      this.logger.info('Database connection established');
       this.init();
+      this.logger.info('Database initialization completed');
     } catch (error) {
-      console.error('Database initialization failed:', error);
-      throw new Error(`Failed to initialize database at ${dbPath}: ${error.message}`);
+      this.logger.error('Database initialization failed', error);
+      throw new Error(`Failed to initialize database at ${dbPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -79,31 +84,50 @@ export class SQLiteManager {
   }
 
   async createMemory(memory: Omit<Memory, 'id' | 'createdAt' | 'updatedAt'>): Promise<Memory> {
-    const now = new Date();
-    const newMemory: Memory = {
-      ...memory,
-      id: uuidv4(),
-      createdAt: now,
-      updatedAt: now,
-    };
+    this.logger.debug('Creating new memory', { title: memory.title, type: memory.type });
+    
+    try {
+      const now = new Date();
+      const newMemory: Memory = {
+        ...memory,
+        id: uuidv4(),
+        createdAt: now,
+        updatedAt: now,
+      };
 
-    const stmt = this.db.prepare(`
-      INSERT INTO memories (id, title, content, type, tags, metadata, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+      const stmt = this.db.prepare(`
+        INSERT INTO memories (id, title, content, type, tags, metadata, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
 
-    stmt.run(
-      newMemory.id,
-      newMemory.title,
-      newMemory.content,
-      newMemory.type,
-      JSON.stringify(newMemory.tags),
-      JSON.stringify(newMemory.metadata),
-      newMemory.createdAt.getTime(),
-      newMemory.updatedAt.getTime()
-    );
+      const result = stmt.run(
+        newMemory.id,
+        newMemory.title,
+        newMemory.content,
+        newMemory.type,
+        JSON.stringify(newMemory.tags || []),
+        JSON.stringify(newMemory.metadata || {}),
+        newMemory.createdAt.getTime(),
+        newMemory.updatedAt.getTime()
+      );
 
-    return newMemory;
+      this.logger.info('Memory created successfully', { 
+        id: newMemory.id, 
+        title: newMemory.title,
+        changes: result.changes 
+      });
+
+      // Verify the memory was actually inserted
+      const verification = await this.getMemory(newMemory.id);
+      if (!verification) {
+        throw new Error('Memory creation failed - could not verify insertion');
+      }
+
+      return newMemory;
+    } catch (error) {
+      this.logger.error('Failed to create memory', error);
+      throw error;
+    }
   }
 
   async getMemory(id: string): Promise<Memory | null> {
@@ -151,16 +175,32 @@ export class SQLiteManager {
   }
 
   async searchMemories(query: string, limit: number = 50, offset: number = 0): Promise<Memory[]> {
-    const stmt = this.db.prepare(`
-      SELECT m.* FROM memories m
-      JOIN memories_fts fts ON m.id = fts.id
-      WHERE memories_fts MATCH ?
-      ORDER BY rank
-      LIMIT ? OFFSET ?
-    `);
-
-    const rows = stmt.all(query, limit, offset) as any[];
-    return rows.map(row => this.rowToMemory(row));
+    this.logger.debug('Searching memories', { query, limit, offset });
+    
+    try {
+      // Use simple LIKE search for reliability
+      const searchPattern = `%${query}%`;
+      const stmt = this.db.prepare(`
+        SELECT * FROM memories 
+        WHERE title LIKE ? OR content LIKE ? OR tags LIKE ?
+        ORDER BY updated_at DESC
+        LIMIT ? OFFSET ?
+      `);
+      
+      const rows = stmt.all(searchPattern, searchPattern, searchPattern, limit, offset) as any[];
+      const results = rows.map(row => this.rowToMemory(row));
+      
+      this.logger.info('Search completed', { 
+        query, 
+        resultsCount: results.length,
+        totalRows: rows.length 
+      });
+      
+      return results;
+    } catch (error) {
+      this.logger.error('Search failed completely', error);
+      return []; // Return empty array instead of throwing
+    }
   }
 
   async getMemoriesByType(type: MemoryType, limit: number = 50, offset: number = 0): Promise<Memory[]> {
@@ -196,14 +236,63 @@ export class SQLiteManager {
   }
 
   async getRecentMemories(limit: number = 20): Promise<Memory[]> {
-    const stmt = this.db.prepare(`
-      SELECT * FROM memories 
-      ORDER BY updated_at DESC 
-      LIMIT ?
-    `);
+    this.logger.debug('Getting recent memories', { limit });
+    
+    try {
+      const stmt = this.db.prepare(`
+        SELECT * FROM memories 
+        ORDER BY updated_at DESC 
+        LIMIT ?
+      `);
 
-    const rows = stmt.all(limit) as any[];
-    return rows.map(row => this.rowToMemory(row));
+      const rows = stmt.all(limit) as any[];
+      const results = rows.map(row => this.rowToMemory(row));
+      
+      this.logger.info('Retrieved recent memories', { 
+        count: results.length,
+        limit 
+      });
+      
+      return results;
+    } catch (error) {
+      this.logger.error('Failed to get recent memories', error);
+      return [];
+    }
+  }
+
+  async getAllMemories(): Promise<Memory[]> {
+    this.logger.debug('Getting all memories');
+    
+    try {
+      const stmt = this.db.prepare(`
+        SELECT * FROM memories 
+        ORDER BY updated_at DESC
+      `);
+
+      const rows = stmt.all() as any[];
+      const results = rows.map(row => this.rowToMemory(row));
+      
+      this.logger.info('Retrieved all memories', { count: results.length });
+      
+      return results;
+    } catch (error) {
+      this.logger.error('Failed to get all memories', error);
+      return [];
+    }
+  }
+
+  async getMemoryCount(): Promise<number> {
+    try {
+      const stmt = this.db.prepare('SELECT COUNT(*) as count FROM memories');
+      const result = stmt.get() as any;
+      const count = result.count || 0;
+      
+      this.logger.debug('Memory count retrieved', { count });
+      return count;
+    } catch (error) {
+      this.logger.error('Failed to get memory count', error);
+      return 0;
+    }
   }
 
   private safeJsonParse(jsonString: string, fallback: any): any {

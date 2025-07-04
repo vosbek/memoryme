@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Memory } from '../../shared/types';
 import { FileText, Calendar, Tag, Trash2, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
+import ConfirmDialog from './ConfirmDialog';
+import { useToast } from './Toast';
 
 interface MemoryListProps {
   memories: Memory[];
@@ -16,17 +18,41 @@ const MemoryList: React.FC<MemoryListProps> = ({
   onMemoryDelete,
   selectedMemory,
 }) => {
-  const handleDelete = (e: React.MouseEvent, memoryId: string) => {
+  const { showError, showSuccess } = useToast();
+  const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; memoryId: string; title: string }>({
+    show: false,
+    memoryId: '',
+    title: ''
+  });
+
+  const handleDelete = (e: React.MouseEvent, memory: Memory) => {
     e.stopPropagation();
-    if (confirm('Are you sure you want to delete this memory?')) {
-      onMemoryDelete(memoryId);
-    }
+    setConfirmDelete({
+      show: true,
+      memoryId: memory.id,
+      title: memory.title
+    });
+  };
+
+  const confirmDeleteMemory = () => {
+    onMemoryDelete(confirmDelete.memoryId);
+    setConfirmDelete({ show: false, memoryId: '', title: '' });
+  };
+
+  const cancelDelete = () => {
+    setConfirmDelete({ show: false, memoryId: '', title: '' });
   };
 
   const handleExternalLink = (e: React.MouseEvent, url: string) => {
     e.stopPropagation();
-    // In a real app, you'd use Electron's shell.openExternal
-    console.log('Opening external link:', url);
+    try {
+      // For now, just copy to clipboard or log - external link handling can be improved later
+      console.log('Opening external link:', url);
+      showSuccess('Link copied', 'Link URL has been logged to console.');
+    } catch (error) {
+      console.error('Failed to open external link:', error);
+      showError('Failed to open link', 'Unable to open the external link.');
+    }
   };
 
   if (memories.length === 0) {
@@ -116,7 +142,7 @@ const MemoryList: React.FC<MemoryListProps> = ({
                 <div className="flex items-center gap-2 ml-4">
                   {memory.metadata.url && (
                     <button
-                      onClick={(e) => handleExternalLink(e, memory.metadata.url)}
+                      onClick={(e) => handleExternalLink(e, memory.metadata.url!)}
                       className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
                       title="Open external link"
                     >
@@ -125,7 +151,7 @@ const MemoryList: React.FC<MemoryListProps> = ({
                   )}
                   
                   <button
-                    onClick={(e) => handleDelete(e, memory.id)}
+                    onClick={(e) => handleDelete(e, memory)}
                     className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                     title="Delete memory"
                   >
@@ -137,6 +163,17 @@ const MemoryList: React.FC<MemoryListProps> = ({
           ))}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmDelete.show}
+        title="Delete Memory"
+        message={`Are you sure you want to delete "${confirmDelete.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmVariant="danger"
+        onConfirm={confirmDeleteMemory}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 };

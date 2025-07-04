@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Memory, MemoryType } from '../../shared/types';
-import { Save, X, Plus, Tag } from 'lucide-react';
+import { Memory, MemoryType, MemoryMetadata } from '../../shared/types';
+import { Save, X, Plus, Tag, AlertCircle } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import { useToast } from './Toast';
 
 interface MemoryEditorProps {
   memory: Memory | null;
@@ -14,6 +15,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({
   onSave,
   onCancel,
 }) => {
+  const { showError } = useToast();
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -23,18 +25,20 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({
       source: '',
       project: '',
       url: '',
-    },
+    } as MemoryMetadata,
   });
   const [newTag, setNewTag] = useState('');
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (memory) {
       setFormData({
-        title: memory.title,
-        content: memory.content,
-        type: memory.type,
-        tags: [...memory.tags],
-        metadata: { ...memory.metadata },
+        title: memory.title || '',
+        content: memory.content || '',
+        type: memory.type || MemoryType.NOTE,
+        tags: Array.isArray(memory.tags) ? [...memory.tags] : [],
+        metadata: memory.metadata ? { ...memory.metadata } : {},
       });
     } else {
       setFormData({
@@ -52,55 +56,73 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({
   }, [memory]);
 
   const validateInput = () => {
-    const errors: string[] = [];
+    const errors: Record<string, string> = {};
     
     if (!formData.title.trim()) {
-      errors.push('Title is required');
+      errors.title = 'Title is required';
     } else if (formData.title.trim().length > 200) {
-      errors.push('Title must be less than 200 characters');
+      errors.title = 'Title must be less than 200 characters';
     }
     
     if (!formData.content.trim()) {
-      errors.push('Content is required');
+      errors.content = 'Content is required';
     } else if (formData.content.trim().length > 100000) {
-      errors.push('Content must be less than 100,000 characters');
+      errors.content = 'Content must be less than 100,000 characters';
     }
     
     if (formData.metadata.url && formData.metadata.url.trim()) {
       try {
         new URL(formData.metadata.url.trim());
       } catch {
-        errors.push('Invalid URL format');
+        errors.url = 'Invalid URL format';
       }
     }
     
     return errors;
   };
 
-  const handleSave = () => {
-    const validationErrors = validateInput();
-    if (validationErrors.length > 0) {
-      alert('Please fix the following errors:\n\n' + validationErrors.join('\n'));
+  // Real-time validation
+  useEffect(() => {
+    const errors = validateInput();
+    setValidationErrors(errors);
+  }, [formData]);
+
+  const handleSave = async () => {
+    const errors = validateInput();
+    if (Object.keys(errors).length > 0) {
+      showError('Validation Error', 'Please fix the errors below before saving.');
       return;
     }
 
-    const memoryToSave: Memory = {
-      id: memory?.id || uuidv4(),
-      title: formData.title.trim(),
-      content: formData.content.trim(),
-      type: formData.type,
-      tags: formData.tags,
-      metadata: {
-        ...formData.metadata,
-        source: formData.metadata.source?.trim() || undefined,
-        project: formData.metadata.project?.trim() || undefined,
-        url: formData.metadata.url?.trim() || undefined,
-      },
-      createdAt: memory?.createdAt || new Date(),
-      updatedAt: new Date(),
-    };
+    setIsLoading(true);
+    try {
+      const memoryToSave: any = {
+        title: formData.title.trim(),
+        content: formData.content.trim(),
+        type: formData.type,
+        tags: formData.tags || [],
+        metadata: {
+          ...formData.metadata,
+          source: formData.metadata.source?.trim() || undefined,
+          project: formData.metadata.project?.trim() || undefined,
+          url: formData.metadata.url?.trim() || undefined,
+        },
+      };
 
-    onSave(memoryToSave);
+      // Only add id, createdAt, updatedAt for existing memories
+      if (memory?.id) {
+        memoryToSave.id = memory.id;
+        memoryToSave.createdAt = memory.createdAt;
+        memoryToSave.updatedAt = new Date();
+      }
+
+      await onSave(memoryToSave);
+    } catch (error) {
+      console.error('Failed to save memory:', error);
+      showError('Save Failed', 'Unable to save the memory. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleAddTag = () => {
@@ -146,10 +168,11 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({
           </button>
           <button
             onClick={handleSave}
-            className="btn-primary"
+            disabled={isLoading || Object.keys(validationErrors).length > 0}
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Save className="w-4 h-4 mr-1" />
-            Save
+            {isLoading ? 'Saving...' : 'Save'}
           </button>
         </div>
       </div>
@@ -167,10 +190,16 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({
               id="title"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              className="input-field"
+              className={`input-field ${validationErrors.title ? 'border-red-500 focus:border-red-500' : ''}`}
               placeholder="Enter a descriptive title..."
               autoFocus
             />
+            {validationErrors.title && (
+              <div className="flex items-center mt-1 text-sm text-red-600">
+                <AlertCircle className="w-4 h-4 mr-1" />
+                {validationErrors.title}
+              </div>
+            )}
           </div>
 
           {/* Type */}
@@ -207,9 +236,15 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({
               id="content"
               value={formData.content}
               onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-              className="textarea-field h-64"
+              className={`textarea-field h-64 ${validationErrors.content ? 'border-red-500 focus:border-red-500' : ''}`}
               placeholder="Enter your memory content..."
             />
+            {validationErrors.content && (
+              <div className="flex items-center mt-1 text-sm text-red-600">
+                <AlertCircle className="w-4 h-4 mr-1" />
+                {validationErrors.content}
+              </div>
+            )}
           </div>
 
           {/* Tags */}
@@ -218,7 +253,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({
               Tags
             </label>
             <div className="flex flex-wrap gap-2 mb-2">
-              {formData.tags.map((tag) => (
+              {(formData.tags || []).map((tag) => (
                 <div
                   key={tag}
                   className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
@@ -300,9 +335,15 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({
                   ...prev,
                   metadata: { ...prev.metadata, url: e.target.value }
                 }))}
-                className="input-field"
+                className={`input-field ${validationErrors.url ? 'border-red-500 focus:border-red-500' : ''}`}
                 placeholder="https://..."
               />
+              {validationErrors.url && (
+                <div className="flex items-center mt-1 text-sm text-red-600">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {validationErrors.url}
+                </div>
+              )}
             </div>
           </div>
         </div>

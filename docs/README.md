@@ -1,14 +1,15 @@
 # DevMemory - Enterprise Developer Memory Assistant
 
-A desktop Electron application that serves as a local memory assistant for enterprise developers, featuring vector database capabilities, LLM integration via AWS Bedrock, and VSCode integration.
+A desktop Electron application that serves as a local memory assistant for enterprise developers, featuring SQLite database with semantic vector search, AWS Bedrock integration, and VSCode extension.
 
 ## 🎯 Features
 
 ### Core Functionality
-- **Local Vector Database**: Semantic search through all your developer knowledge
+- **Local SQLite Database**: Fast, reliable storage with full-text search
+- **Semantic Vector Search**: AI-powered similarity search using embeddings
 - **Multiple Memory Types**: Code snippets, documentation, meeting notes, decisions, API calls, debug sessions, project contexts, Kubernetes resources, commands, links, and general notes
-- **LLM Integration**: AWS Bedrock integration with Claude 3.5 Sonnet and Titan embeddings
-- **VSCode Integration**: Automatic context capture from VSCode (files, git, terminal commands)
+- **AWS Bedrock Integration**: Optional cloud AI with Titan embeddings (graceful fallback)
+- **VSCode Extension**: Seamless capture from VSCode with context awareness
 - **Advanced Search**: Hybrid semantic + keyword search with filters
 - **Tagging System**: Organize memories with custom tags
 - **Knowledge Graph**: Visual representation of interconnected memories
@@ -28,9 +29,9 @@ A desktop Electron application that serves as a local memory assistant for enter
    - Download from: https://nodejs.org/
    - Verify installation: `node --version` and `npm --version`
 
-2. **Python** (v3.8 or higher) - Required for Chroma vector database
+2. **Python** (Optional) - Only needed for advanced AI features
    - Download from: https://python.org/
-   - Verify installation: `python --version` or `python3 --version`
+   - Note: Application works without Python using fallback embeddings
 
 3. **Git** (for version control)
    - Download from: https://git-scm.com/
@@ -40,12 +41,13 @@ A desktop Electron application that serves as a local memory assistant for enter
    - Install from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
    - Required for native dependency compilation (better-sqlite3)
 
-### AWS Prerequisites
-1. **AWS Account** with Bedrock access
+### AWS Prerequisites (Optional)
+1. **AWS Account** with Bedrock access (for enhanced AI features)
 2. **AWS CLI** configured with appropriate credentials
 3. **Bedrock Model Access** enabled for:
-   - Claude 3.5 Sonnet (`anthropic.claude-3-sonnet-20240229-v1:0`)
    - Amazon Titan Text Embeddings (`amazon.titan-embed-text-v1`)
+
+**Note**: The application works without AWS using local fallback embeddings.
 
 ## 📦 Installation
 
@@ -68,9 +70,6 @@ Ensure you have:
 
 #### Step 3: Install Dependencies
 ```bash
-# Install Python dependencies first
-pip install chromadb
-
 # Install Node.js dependencies
 npm install
 # or for clean build: npm run rebuild
@@ -175,11 +174,10 @@ The application creates a configuration file on first run. Settings can be modif
 {
   "database": {
     "sqlitePath": "path/to/devmemory.db",
-    "chromaPath": "path/to/chroma"
+    "vectorStorePath": "path/to/vector-data.json"
   },
   "llm": {
     "awsRegion": "us-east-1",
-    "bedrockModelId": "anthropic.claude-3-sonnet-20240229-v1:0",
     "embeddingModelId": "amazon.titan-embed-text-v1"
   },
   "ui": {
@@ -239,9 +237,9 @@ The application creates a configuration file on first run. Settings can be modif
 
 ### Data Storage
 - All data stored locally by default
-- SQLite database contains structured data
-- Chroma vector database contains embeddings
-- No data sent to external services except AWS Bedrock for LLM processing
+- SQLite database contains structured memory data
+- Local JSON file contains vector embeddings
+- No data sent to external services except optional AWS Bedrock for embeddings
 
 ### AWS Integration
 - Requires valid AWS credentials
@@ -293,14 +291,11 @@ The application creates a configuration file on first run. Settings can be modif
 npm rebuild better-sqlite3
 ```
 
-**Python/Chroma Issues**
+**Vector Store Issues**
 ```bash
-# Ensure Python is in PATH
-python --version
-
-# Reinstall chromadb
-pip uninstall chromadb
-pip install chromadb
+# Check if vector store file is corrupted
+# Delete vector-data.json to reset (will lose semantic search history)
+# App will recreate it automatically
 ```
 
 **AWS Bedrock Access Denied**
@@ -350,6 +345,6 @@ MIT License - see LICENSE file for details
 ## 🙏 Acknowledgments
 
 - Built with Electron, React, and TypeScript
-- Vector database powered by Chroma
-- LLM capabilities via AWS Bedrock
-- Inspired by the MCP memory server project# memoryme
+- SQLite database with better-sqlite3
+- Vector search with local embeddings + AWS Bedrock
+- Inspired by the MCP memory server project

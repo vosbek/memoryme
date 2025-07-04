@@ -11,10 +11,12 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [appVersion, setAppVersion] = useState('');
+  const [vectorInfo, setVectorInfo] = useState<{count: number, name: string, healthy: boolean} | null>(null);
 
   useEffect(() => {
     loadConfig();
     loadAppVersion();
+    loadVectorInfo();
   }, []);
 
   const loadConfig = async () => {
@@ -34,6 +36,15 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
       setAppVersion(version);
     } catch (error) {
       console.error('Failed to load app version:', error);
+    }
+  };
+
+  const loadVectorInfo = async () => {
+    try {
+      const info = await window.electronAPI.getVectorInfo();
+      setVectorInfo(info);
+    } catch (error) {
+      console.error('Failed to load vector info:', error);
     }
   };
 
@@ -312,6 +323,48 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
             </div>
           </section>
 
+          {/* Vector Database Status */}
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <Database className="w-5 h-5 text-gray-600" />
+              <h3 className="text-lg font-medium text-gray-900">Vector Database</h3>
+            </div>
+            
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium text-gray-900">Status</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  vectorInfo?.healthy 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {vectorInfo?.healthy ? 'Healthy' : 'Unavailable'}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-600">Documents:</span>
+                  <span className="ml-2 font-medium">{vectorInfo?.count || 0}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Store:</span>
+                  <span className="ml-2 font-medium">{vectorInfo?.name || 'Unknown'}</span>
+                </div>
+              </div>
+              
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <p className="text-xs text-gray-500">
+                  Vector database enables semantic search across your memories.
+                  {vectorInfo?.healthy 
+                    ? ' Working with AWS Bedrock embeddings or local fallback.'
+                    : ' Check AWS credentials or restart the application.'
+                  }
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* About */}
           <section>
             <div className="flex items-center gap-2 mb-4">
@@ -322,7 +375,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
             <div className="bg-gray-50 rounded-lg p-4">
               <h4 className="font-medium text-gray-900 mb-2">DevMemory</h4>
               <p className="text-sm text-gray-600 mb-2">
-                Enterprise Developer Memory Assistant
+                Enterprise Developer Memory Assistant with Vector Search
               </p>
               <p className="text-sm text-gray-500">
                 Version: {appVersion || 'Unknown'}

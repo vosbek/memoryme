@@ -11,12 +11,15 @@ export interface ElectronAPI {
   getMemoriesByType: (type: MemoryType, limit?: number, offset?: number) => Promise<Memory[]>;
   getMemoriesByTags: (tags: string[], limit?: number, offset?: number) => Promise<Memory[]>;
   getRecentMemories: (limit?: number) => Promise<Memory[]>;
+  getAllMemories: () => Promise<Memory[]>;
+  getMemoryCount: () => Promise<number>;
   getAllTags: () => Promise<string[]>;
 
   // App configuration
   getAppConfig: () => Promise<AppConfig>;
   setAppConfig: (config: AppConfig) => Promise<AppConfig>;
   getAppVersion: () => Promise<string>;
+  getVectorInfo: () => Promise<{count: number, name: string, healthy: boolean}>;
 
   // Menu events
   onMenuNewMemory: (callback: () => void) => void;
@@ -40,12 +43,15 @@ const electronAPI: ElectronAPI = {
   getMemoriesByType: (type, limit, offset) => ipcRenderer.invoke('get-memories-by-type', type, limit, offset),
   getMemoriesByTags: (tags, limit, offset) => ipcRenderer.invoke('get-memories-by-tags', tags, limit, offset),
   getRecentMemories: (limit) => ipcRenderer.invoke('get-recent-memories', limit),
+  getAllMemories: () => ipcRenderer.invoke('get-all-memories'),
+  getMemoryCount: () => ipcRenderer.invoke('get-memory-count'),
   getAllTags: () => ipcRenderer.invoke('get-all-tags'),
 
   // App configuration
   getAppConfig: () => ipcRenderer.invoke('get-app-config'),
   setAppConfig: (config) => ipcRenderer.invoke('set-app-config', config),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  getVectorInfo: () => ipcRenderer.invoke('get-vector-info'),
 
   // Menu events
   onMenuNewMemory: (callback) => ipcRenderer.on('menu-new-memory', callback),
