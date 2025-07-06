@@ -1,22 +1,28 @@
 # DevMemory Architecture Documentation
 
-## Current Architecture (MVP)
+## Current Architecture (Enterprise Hybrid v3.0)
 
 ### System Overview
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   VSCode Ext    │    │  Desktop App    │    │  AWS Bedrock    │
-│   (Capture)     │◄──►│   (Electron)    │◄──►│  (Optional AI)  │
+│   VSCode Ext    │    │  Desktop App    │    │ Microsoft 365   │
+│   (Capture)     │◄──►│   (Electron)    │◄──►│ (Enterprise)    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-                              │
-                              ▼
-                    ┌─────────────────┐
-                    │ Local Storage   │
-                    │ SQLite + JSON   │
-                    └─────────────────┘
+                              │                         │
+                              ▼                         ▼
+                    ┌─────────────────┐    ┌─────────────────┐
+                    │ Hybrid Database │    │    M365 Graph   │
+                    │ SQLite+ChromaDB │    │      API        │
+                    └─────────────────┘    └─────────────────┘
+                              │                         │
+                              ▼                         ▼
+                    ┌─────────────────┐    ┌─────────────────┐
+                    │  Knowledge      │    │  AWS Bedrock    │
+                    │     Graph       │    │ (Embeddings)    │
+                    └─────────────────┘    └─────────────────┘
 ```
 
-### Current Technology Stack
+### Current Technology Stack (v3.0 - Enterprise Hybrid with M365 Integration)
 
 #### Frontend (Renderer Process)
 - **React 18** - UI framework with hooks and context
@@ -24,48 +30,137 @@
 - **Tailwind CSS** - Utility-first styling
 - **Lucide React** - Icon library
 - **React Router** - Client-side routing
+- **Enhanced Knowledge Graph** - Interactive entity-relationship visualization
+- **M365 Integration UI** - Enterprise authentication and sync controls
 
 #### Backend (Main Process)
 - **Electron** - Cross-platform desktop framework
 - **Node.js** - JavaScript runtime
+- **Hybrid Database Manager** - Orchestrates all data systems
 - **better-sqlite3** - Fast, synchronous SQLite interface
-- **Custom Vector Store** - JSON-based embedding storage
+- **ChromaDB** - Professional vector database with HNSW indexing
+- **Knowledge Graph Engine** - Entity-relationship modeling
+- **M365 Integration Services** - Enterprise content synchronization
 
-#### Data Storage
-- **SQLite Database** - Structured memory data
-  - Memories table with FTS (Full-Text Search)
-  - Metadata and relationships
-  - Indexes for performance
-- **JSON Vector Store** - Semantic embeddings
-  - Vector embeddings (384-dimensional)
-  - Similarity search with cosine distance
-  - Local caching with TTL
+#### Data Storage (Hybrid Architecture)
+- **SQLite Database** - Primary structured storage
+  - Memories table with FTS5 (Full-Text Search)
+  - Knowledge graph tables (entities, relationships)
+  - M365 metadata and sync tracking
+  - Metadata and indexes for performance
+- **ChromaDB Vector Store** - Professional semantic search
+  - HNSW indexing for 10-100x performance improvement
+  - Multiple embedding provider support
+  - Local persistent storage with automatic migration
+  - M365 content vectorization and indexing
+- **Knowledge Graph System** - Entity relationships
+  - Automatic entity extraction from content and M365 data
+  - Relationship inference using pattern analysis
+  - Graph traversal queries with confidence scoring
+  - M365 entity mapping (people, organizations, projects)
 
 #### AI Integration
 - **AWS Bedrock** - Cloud embedding generation
-  - Amazon Titan Text Embeddings
+  - Amazon Titan Text Embeddings (primary)
+  - Multiple embedding provider support
   - Fallback to local hash-based embeddings
   - Graceful degradation when offline
+- **Entity Extraction Engine** - Advanced pattern-based NLP
+  - Technology, person, project, concept detection
+  - Contextual relationship inference
+  - Confidence scoring and validation
+  - M365-specific entity extraction (emails, meetings, teams)
 
-### Data Flow Architecture
+#### Enterprise Integration
+- **Microsoft 365 Authentication** - MSAL-Electron based OAuth
+  - Authorization Code + PKCE flow for desktop apps
+  - Conditional access and MFA support
+  - Enterprise security policy compliance
+  - Automatic token refresh and validation
+- **Microsoft Graph API Client** - Unified M365 data access
+  - Email intelligence from Outlook
+  - Calendar context and meeting insights
+  - Teams collaboration knowledge mining
+  - SharePoint document intelligence
+  - Organization chart and people insights
+- **M365 Synchronization Engine** - Intelligent content sync
+  - Full and incremental synchronization
+  - Conflict resolution strategies
+  - Real-time progress tracking
+  - Configurable sync options and schedules
+
+### Data Flow Architecture (v3.0 - Enterprise Hybrid with M365)
 
 #### Memory Creation Flow
 ```
-1. User Input (VSCode/Desktop) → 
+1. Content Sources:
+   - User Input (VSCode/Desktop)
+   - M365 Synchronization (emails, meetings, teams)
 2. Validation & Processing → 
-3. Generate Embedding (AWS/Local) → 
-4. Store in SQLite + Vector Store → 
-5. Update UI
+3. Hybrid Database Manager:
+   a. Store in SQLite (primary storage)
+   b. Generate embeddings (AWS Bedrock/local)
+   c. Store vectors in ChromaDB
+   d. Extract entities & relationships (including M365 entities)
+   e. Update knowledge graph with cross-platform relationships
+4. Update UI with new connections and M365 insights
 ```
 
-#### Search Flow
+#### M365 Synchronization Flow
+```
+1. M365 Authentication (MSAL + OAuth) →
+2. Graph API Content Fetching:
+   - Emails from Outlook
+   - Calendar events and meetings
+   - Teams conversations and channels
+   - SharePoint documents and sites
+3. Entity Mapping & Transformation:
+   - Extract people, organizations, projects from M365 content
+   - Map M365 content types to DevMemory memory types
+   - Create contextual relationships (email communication, meeting attendance)
+4. Sync Engine Processing:
+   - Conflict resolution (local vs remote changes)
+   - Incremental sync for efficiency
+   - Progress tracking and error handling
+5. Hybrid Database Integration:
+   - Store M365 memories with source metadata
+   - Create M365-specific entities and relationships
+   - Update search indexes with M365 content
+```
+
+#### Intelligent Search Flow
 ```
 1. User Query → 
-2. Generate Query Embedding → 
-3. Vector Similarity Search → 
-4. SQLite Keyword Search → 
-5. Merge & Rank Results → 
-6. Return to UI
+2. Search Method Selection:
+   - Auto: Analyze query characteristics
+   - Vector: Generate embeddings for similarity (includes M365 content)
+   - Graph: Entity relationship traversal (cross-platform)
+   - Text: SQLite FTS5 full-text search (all content sources)
+   - Hybrid: Combine all methods with M365 enrichment
+3. Execute chosen search method(s)
+4. Rank and merge results with M365 context
+5. Return enriched results with cross-platform relationship context
+```
+
+#### Enhanced Knowledge Graph Flow
+```
+1. Content Sources (Local + M365) → 
+2. Advanced Entity Extraction:
+   - Pattern-based detection (enhanced for M365)
+   - Type classification (person, project, tech, organization, meeting)
+   - M365-specific entities (email threads, teams, sites)
+   - Confidence scoring with source attribution
+3. Cross-Platform Relationship Inference:
+   - Communication patterns (email threads, meeting attendance)
+   - Collaboration relationships (team membership, document sharing)
+   - Project associations (based on shared context)
+   - Technology usage patterns (across platforms)
+4. Graph Updates:
+   - Create/update entities with M365 enrichment
+   - Establish relationships with source tracking
+   - Update confidence scores with cross-platform validation
+   - Link local and M365 entities
+5. Visual Graph Updates with M365 insights
 ```
 
 ## Target Enterprise Architecture

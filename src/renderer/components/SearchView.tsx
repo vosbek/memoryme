@@ -42,7 +42,7 @@ const SearchView: React.FC<SearchViewProps> = ({
 
     setLoading(true);
     try {
-      const searchResults = await window.electronAPI.searchMemories(searchQuery.trim(), 50);
+      const searchResults = await window.electronAPI.searchMemories(searchQuery.trim(), { limit: 50 });
       setResults(searchResults);
     } catch (error) {
       console.error('Search failed:', error);

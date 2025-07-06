@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppConfig } from '../../shared/types';
-import { X, Save, Database, Brain, Palette, Code, Info } from 'lucide-react';
+import { X, Save, Database, Brain, Palette, Code, Info, Building2, CheckCircle, XCircle, AlertCircle, RefreshCw, Clock, FileText } from 'lucide-react';
+import M365LoginView from './M365LoginView';
 
 interface SettingsViewProps {
   onClose: () => void;
@@ -12,11 +13,18 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
   const [saving, setSaving] = useState(false);
   const [appVersion, setAppVersion] = useState('');
   const [vectorInfo, setVectorInfo] = useState<{count: number, name: string, healthy: boolean} | null>(null);
+  const [m365Status, setM365Status] = useState<any>({ isAuthenticated: false });
+  const [showM365Login, setShowM365Login] = useState(false);
+  const [m365Loading, setM365Loading] = useState(false);
+  const [m365SyncStatus, setM365SyncStatus] = useState<any>(null);
+  const [syncLoading, setSyncLoading] = useState(false);
 
   useEffect(() => {
     loadConfig();
     loadAppVersion();
     loadVectorInfo();
+    loadM365Status();
+    loadM365SyncStatus();
   }, []);
 
   const loadConfig = async () => {
@@ -48,6 +56,88 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
     }
   };
 
+  const loadM365Status = async () => {
+    try {
+      const status = await window.electronAPI.m365GetStatus();
+      setM365Status(status);
+    } catch (error) {
+      console.error('Failed to load M365 status:', error);
+    }
+  };
+
+  const loadM365SyncStatus = async () => {
+    try {
+      const status = await window.electronAPI.m365SyncStatus();
+      setM365SyncStatus(status);
+    } catch (error) {
+      console.error('Failed to load M365 sync status:', error);
+    }
+  };
+
+  const handleM365Connect = () => {
+    setShowM365Login(true);
+  };
+
+  const handleM365Disconnect = async () => {
+    setM365Loading(true);
+    try {
+      await window.electronAPI.m365Logout();
+      await loadM365Status(); // Refresh status
+    } catch (error) {
+      console.error('Failed to disconnect M365:', error);
+    } finally {
+      setM365Loading(false);
+    }
+  };
+
+  const handleM365Refresh = async () => {
+    setM365Loading(true);
+    try {
+      await window.electronAPI.m365RefreshToken();
+      await loadM365Status(); // Refresh status
+    } catch (error) {
+      console.error('Failed to refresh M365 token:', error);
+    } finally {
+      setM365Loading(false);
+    }
+  };
+
+  const handleM365LoginSuccess = async () => {
+    setShowM365Login(false);
+    await loadM365Status(); // Refresh status
+    await loadM365SyncStatus(); // Refresh sync status
+  };
+
+  const handleM365Sync = async () => {
+    setSyncLoading(true);
+    try {
+      const result = await window.electronAPI.m365SyncStart();
+      console.log('Sync completed:', result);
+      await loadM365SyncStatus(); // Refresh status
+      alert(`Synchronization completed! Processed ${result.itemsProcessed} items (${result.itemsCreated} created, ${result.itemsUpdated} updated)`);
+    } catch (error) {
+      console.error('Sync failed:', error);
+      alert(`Synchronization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+  const handleM365IncrementalSync = async () => {
+    setSyncLoading(true);
+    try {
+      const result = await window.electronAPI.m365SyncIncremental();
+      console.log('Incremental sync completed:', result);
+      await loadM365SyncStatus(); // Refresh status
+      alert(`Incremental sync completed! Processed ${result.itemsProcessed} items`);
+    } catch (error) {
+      console.error('Incremental sync failed:', error);
+      alert(`Incremental sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!config) return;
 
@@ -67,14 +157,28 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
     if (!config) return;
 
     const newConfig = { ...config };
-    let current: any = newConfig;
     
-    for (let i = 0; i < path.length - 1; i++) {
-      current = current[path[i]];
-    }
+    // Type-safe deep property update using reduce
+    const updateNestedObject = (obj: Record<string, any>, keyPath: string[], newValue: any): Record<string, any> => {
+      if (keyPath.length === 1) {
+        return { ...obj, [keyPath[0]]: newValue };
+      }
+      
+      const [currentKey, ...remainingPath] = keyPath;
+      
+      // Ensure the nested object exists
+      if (!obj[currentKey] || typeof obj[currentKey] !== 'object') {
+        obj[currentKey] = {};
+      }
+      
+      return {
+        ...obj,
+        [currentKey]: updateNestedObject(obj[currentKey], remainingPath, newValue)
+      };
+    };
     
-    current[path[path.length - 1]] = value;
-    setConfig(newConfig);
+    const updatedConfig = updateNestedObject(newConfig, path, value);
+    setConfig(updatedConfig as AppConfig);
   };
 
   if (loading) {
@@ -323,6 +427,128 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
             </div>
           </section>
 
+          {/* M365 Integration */}
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <Building2 className="w-5 h-5 text-gray-600" />
+              <h3 className="text-lg font-medium text-gray-900">Microsoft 365 Integration</h3>
+            </div>
+            
+            <div className="bg-gray-50 rounded-lg p-4">
+              {m365Status.isAuthenticated ? (
+                <>
+                  {/* Connected Status */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <span className="font-medium text-gray-900">Connected to Microsoft 365</span>
+                    </div>
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Active
+                    </span>
+                  </div>
+
+                  {/* Account Information */}
+                  <div className="bg-white rounded-md p-3 mb-4">
+                    <div className="text-sm text-gray-600 mb-1">Account</div>
+                    <div className="font-medium text-gray-900">
+                      {m365Status.account?.name || m365Status.account?.username}
+                    </div>
+                    <div className="text-sm text-gray-500">{m365Status.account?.username}</div>
+                    {m365Status.tenantId && (
+                      <div className="text-xs text-gray-400 mt-1">
+                        Tenant: {m365Status.tenantId.substring(0, 8)}...
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Connection Details */}
+                  <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                    <div>
+                      <span className="text-gray-600">Data Access:</span>
+                      <span className="ml-2 font-medium text-gray-900">Read-only</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Security:</span>
+                      <span className="ml-2 font-medium text-gray-900">Enterprise Policies</span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleM365Refresh}
+                      disabled={m365Loading}
+                      className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-300 flex items-center justify-center gap-2 text-sm font-medium"
+                    >
+                      {m365Loading ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4" />
+                          Refresh
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleM365Disconnect}
+                      disabled={m365Loading}
+                      className="flex-1 bg-gray-200 text-gray-700 px-3 py-2 rounded-md hover:bg-gray-300 disabled:bg-gray-100 text-sm font-medium"
+                    >
+                      Disconnect
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Not Connected Status */}
+                  <div className="text-center py-6">
+                    <XCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <h4 className="font-medium text-gray-900 mb-2">Not Connected</h4>
+                    <p className="text-sm text-gray-600 mb-4 max-w-md mx-auto">
+                      Connect to Microsoft 365 to enable email intelligence, calendar context, 
+                      Teams knowledge, and SharePoint document intelligence.
+                    </p>
+                    
+                    {/* Feature Preview */}
+                    <div className="text-left bg-white rounded-md p-3 mb-4">
+                      <div className="text-sm font-medium text-gray-900 mb-2">Available Features:</div>
+                      <div className="space-y-1 text-sm text-gray-600">
+                        <div>📧 Email knowledge extraction from Outlook</div>
+                        <div>📅 Calendar context and meeting intelligence</div>
+                        <div>💬 Teams collaboration knowledge mining</div>
+                        <div>📄 SharePoint document intelligence</div>
+                        <div>👥 Organization chart and people insights</div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleM365Connect}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium flex items-center justify-center gap-2 mx-auto"
+                    >
+                      <Building2 className="w-4 h-4" />
+                      Connect to Microsoft 365
+                    </button>
+                  </div>
+
+                  {/* Security Notice */}
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5" />
+                      <div className="text-sm">
+                        <div className="font-medium text-blue-900 mb-1">Enterprise Security</div>
+                        <div className="text-blue-700">
+                          Uses your company's existing credentials. Respects all security policies 
+                          including conditional access and MFA. All data processed locally.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+
           {/* Vector Database Status */}
           <section>
             <div className="flex items-center gap-2 mb-4">
@@ -384,6 +610,14 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
           </section>
         </div>
       </div>
+
+      {/* M365 Login Modal */}
+      {showM365Login && (
+        <M365LoginView
+          onClose={() => setShowM365Login(false)}
+          onSuccess={handleM365LoginSuccess}
+        />
+      )}
     </div>
   );
 };

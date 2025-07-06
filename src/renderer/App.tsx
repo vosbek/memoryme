@@ -174,7 +174,7 @@ const AppContent: React.FC = () => {
   const handleSearch = useCallback(async (query: string) => {
     try {
       setLoading(true);
-      const results = await window.electronAPI.searchMemories(query, 50);
+      const results = await window.electronAPI.searchMemories(query, { limit: 50 });
       setMemories(results);
     } catch (error) {
       console.error('Failed to search memories:', error);
