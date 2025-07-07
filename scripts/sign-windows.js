@@ -34,7 +34,7 @@ const config = {
  * @param {object} options - Signing options from electron-builder
  */
 async function sign(options) {
-  const { path: filePath, name, site, options: builderOptions } = options;
+  const { path: filePath, name, site: _site, options: _builderOptions } = options;
   
   console.log(`🔐 Code signing: ${name || path.basename(filePath)}`);
   
@@ -116,7 +116,7 @@ function checkSignTool() {
   try {
     execSync(`"${config.signToolPath}" /? >nul 2>&1`, { stdio: 'ignore' });
     return true;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }
