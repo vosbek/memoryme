@@ -4,12 +4,15 @@
   "description": "Enterprise Developer Memory Assistant - Local vector database with LLM integration",
   "main": "dist/main.js",
   "scripts": {
-    "dev": "concurrently \"npm run dev:electron\" \"npm run dev:react\"",
+    "dev": "npm run copy-wasm && concurrently \"npm run dev:electron\" \"npm run dev:react\"",
+    "dev:full": "npm run copy-wasm && concurrently \"npm run chromadb\" \"npm run dev:electron\" \"npm run dev:react\"",
     "dev:electron": "cross-env NODE_ENV=development electron .",
     "dev:react": "webpack serve --config webpack.renderer.config.js --mode development",
-    "build": "npm run build:react && npm run build:electron",
+    "chromadb": "python -c \"import chromadb; print('ChromaDB available')\" && python -m chromadb.cli.cli run --path chromadb-data --port 8000 || echo \"ChromaDB not available - install with: pip install chromadb\"",
+    "build": "npm run copy-wasm && npm run build:react && npm run build:electron",
     "build:react": "webpack --config webpack.renderer.config.js --mode production",
     "build:electron": "webpack --config webpack.main.config.js --mode production",
+    "copy-wasm": "node -e \"const fs = require('fs'); const path = require('path'); const srcDir = 'node_modules/sql.js/dist'; const destDir = 'dist/sql.js/dist'; fs.mkdirSync(destDir, {recursive: true}); fs.readdirSync(srcDir).filter(f => f.endsWith('.wasm')).forEach(f => fs.copyFileSync(path.join(srcDir, f), path.join(destDir, f))); console.log('WASM files copied successfully!');\"",
     "package": "electron-builder",
     "package:win": "electron-builder --win",
     "package:mac": "electron-builder --mac",
@@ -26,6 +29,57 @@
     "test:database": "jest --testPathPattern=__tests__/database",
     "clean": "rimraf dist dist-electron node_modules/.cache",
     "rebuild": "npm run clean && npm install"
+  },
+  "_scripts_documentation": {
+    "description": "DevMemory NPM Scripts Reference",
+    "development": {
+      "dev": "Basic development mode with legacy vector store",
+      "dev:full": "Full development mode with ChromaDB vector search (requires Python + ChromaDB)",
+      "dev:electron": "Start only the Electron main process",
+      "dev:react": "Start only the React development server",
+      "chromadb": "Start only the ChromaDB server on localhost:8000"
+    },
+    "building": {
+      "build": "Full production build (React + Electron)",
+      "build:react": "Build only the React renderer process", 
+      "build:electron": "Build only the Electron main process",
+      "copy-wasm": "Copy SQL.js WASM files to dist directory"
+    },
+    "packaging": {
+      "package": "Create platform-specific distributables using electron-builder",
+      "package:win": "Create Windows installer (.exe)",
+      "package:mac": "Create macOS application (.dmg)",
+      "package:linux": "Create Linux packages (.AppImage, .deb)",
+      "dist": "Full build + package workflow"
+    },
+    "testing": {
+      "test": "Run all Jest tests",
+      "test:watch": "Run tests in watch mode",
+      "test:coverage": "Run tests with coverage report",
+      "test:ci": "Run tests for CI/CD",
+      "test:unit": "Run only component unit tests",
+      "test:integration": "Run only integration tests",
+      "test:database": "Run only database tests"
+    },
+    "maintenance": {
+      "lint": "Check code style with ESLint",
+      "lint:fix": "Fix code style issues automatically",
+      "clean": "Remove build artifacts and cache",
+      "rebuild": "Clean + reinstall dependencies"
+    },
+    "prerequisites": {
+      "node": "Node.js 18+ required",
+      "npm": "npm 8+ required", 
+      "python": "Python 3.8+ required for ChromaDB",
+      "chromadb": "pip install chromadb (optional but recommended)"
+    },
+    "usage_examples": {
+      "fresh_machine": "npm install && npm run build && npm run dev:full",
+      "development": "npm run dev:full (with ChromaDB) OR npm run dev (basic)",
+      "production": "npm run build && npx electron .",
+      "installer": "npm run dist",
+      "chromadb_manual": "start-chromadb.bat && npm run dev"
+    }
   },
   "keywords": [
     "electron",

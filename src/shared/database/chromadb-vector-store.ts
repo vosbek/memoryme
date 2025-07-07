@@ -59,9 +59,10 @@ export class ChromaDBVectorStore {
     try {
       this.logger.info('Initializing ChromaDB client...');
       
-      // Initialize ChromaDB client with local persistent storage
+      // Initialize ChromaDB client
+      // Try connecting to local ChromaDB server first, then fallback
       this.client = new ChromaClient({
-        path: this.persistPath
+        path: "http://localhost:8000" // Default ChromaDB server
       });
 
       // Test embedding function

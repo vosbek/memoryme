@@ -31,15 +31,33 @@ export class SQLiteManager {
       this.sqlJs = await initSqlJs({
         // Specify the wasm file location - sql.js needs this
         locateFile: (file: string) => {
-          // In Electron, try multiple potential paths for the WASM file
-          const isDev = process.env.NODE_ENV === 'development';
-          if (isDev) {
-            // Development: use node_modules path from project root
-            return path.join(process.cwd(), 'node_modules/sql.js/dist', file);
-          } else {
-            // Production: use packaged resources path
-            return path.join(process.resourcesPath || path.join(process.cwd(), 'node_modules'), 'sql.js/dist', file);
+          // Try multiple potential paths for the WASM file
+          const possiblePaths = [
+            // Development: node_modules path from project root
+            path.join(process.cwd(), 'node_modules/sql.js/dist', file),
+            // Development: dist folder
+            path.join(process.cwd(), 'dist/sql.js/dist', file),
+            // Production: packaged resources path
+            path.join(process.resourcesPath || process.cwd(), 'node_modules/sql.js/dist', file),
+            // Fallback: relative to current directory
+            path.join(__dirname, 'sql.js/dist', file)
+          ];
+          
+          // Try each path and return the first one that exists
+          for (const testPath of possiblePaths) {
+            try {
+              if (fs.existsSync(testPath)) {
+                this.logger.info(`Found WASM file at: ${testPath}`);
+                return testPath;
+              }
+            } catch (error) {
+              // Continue to next path
+            }
           }
+          
+          // If no path found, log all attempted paths and use the first one
+          this.logger.warn(`WASM file not found in any of these paths: ${possiblePaths.join(', ')}`);
+          return possiblePaths[0];
         }
       });
 

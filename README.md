@@ -16,6 +16,7 @@ DevMemory is an **Enterprise Developer Memory Assistant** that captures, stores,
 - 🏢 **Microsoft 365 Integration** - Email, Teams, SharePoint, and OneDrive sync
 - 💾 **Local-First Storage** - SQLite + ChromaDB for privacy and performance
 - 🤖 **Claude 3 Integration** - AWS Bedrock for content analysis and embeddings
+- 🧩 **VS Code Extension** - Instant code capture and search directly from your editor
 
 ## 🚀 **Quick Start**
 
@@ -25,13 +26,22 @@ DevMemory is an **Enterprise Developer Memory Assistant** that captures, stores,
 ### **For Developers & Other Platforms**
 
 ```bash
-# Prerequisites: Node.js 18+, npm 8+, Git
+# Prerequisites: Node.js 18+, npm 8+, Git, Python 3.8+
 git clone <repository-url> memory
 cd memory
 npm install
 
-# For development (recommended):
+# Install ChromaDB for enhanced vector search (recommended):
+pip install chromadb
+
+# Option A: Full experience with ChromaDB
+npm run dev:full
+
+# Option B: Basic mode without ChromaDB
 npm run dev
+
+# Optional: Install VS Code extension for instant code capture
+# In VS Code: Extensions → Install from VSIX → vscode-extension/devmemory-vscode-1.0.0.vsix
 
 # For production build:
 npm run build
@@ -44,6 +54,8 @@ npm run dist
 ### **⚠️ Important Notes**
 - **NO** `npm start` script exists - use `npm run dev` for development
 - **Enterprise Ready**: Uses sql.js (pure JavaScript) - no native compilation required
+- **ChromaDB Optional**: Works with basic vector search if ChromaDB unavailable
+- **VS Code Integration**: Extension available for seamless code capture workflow
 - **Offline Capable**: Core features work without internet (cloud AI optional)
 
 ## ✨ **Key Features**
