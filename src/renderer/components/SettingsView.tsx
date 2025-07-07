@@ -234,9 +234,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-white">
+    <div className="flex-1 flex flex-col bg-white h-full min-h-0">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
         <h2 className="text-lg font-medium text-gray-900">Settings</h2>
         <div className="flex items-center gap-2">
           <button
@@ -258,7 +258,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
       </div>
 
       {/* Settings Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 min-h-0">
         <div className="max-w-4xl mx-auto space-y-8">
           
           {/* Database Settings */}

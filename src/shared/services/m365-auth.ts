@@ -108,14 +108,14 @@ export class M365AuthenticationService {
   // Default configuration for enterprise scenarios
   private readonly defaultScopes = [
     'User.Read',
-    'Mail.Read',
+    'Mail.Read', 
     'Calendars.Read',
     'Sites.Read.All',
     'Files.Read.All',
     'Chat.Read',
     'OnlineMeetings.Read',
     'People.Read',
-    'Directory.Read.Basic'
+    'Directory.Read.All'
   ];
 
   // Enterprise-optimized MSAL configuration
