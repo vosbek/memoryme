@@ -62,7 +62,7 @@ export class ChromaDBVectorStore {
       // Initialize ChromaDB client
       // Try connecting to local ChromaDB server first, then fallback
       this.client = new ChromaClient({
-        path: "http://localhost:8000" // Default ChromaDB server
+        path: "http://localhost:8001" // Default ChromaDB server
       });
 
       // Test embedding function

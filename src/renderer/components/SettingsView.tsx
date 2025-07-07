@@ -275,7 +275,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
                 </label>
                 <input
                   type="text"
-                  value={config.database.sqlitePath}
+                  value={config.database?.sqlitePath || ''}
                   onChange={(e) => updateConfig(['database', 'sqlitePath'], e.target.value)}
                   className="input-field"
                   placeholder="/path/to/devmemory.db"
@@ -288,7 +288,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
                 </label>
                 <input
                   type="text"
-                  value={config.database.chromaPath}
+                  value={config.database?.chromaPath || ''}
                   onChange={(e) => updateConfig(['database', 'chromaPath'], e.target.value)}
                   className="input-field"
                   placeholder="/path/to/chroma"
@@ -310,7 +310,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
                   AWS Region
                 </label>
                 <select
-                  value={config.llm.awsRegion}
+                  value={config.llm?.awsRegion || 'us-east-1'}
                   onChange={(e) => updateConfig(['llm', 'awsRegion'], e.target.value)}
                   className="select-field"
                 >
@@ -326,7 +326,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
                   Bedrock Model ID
                 </label>
                 <select
-                  value={config.llm.bedrockModelId}
+                  value={config.llm?.bedrockModelId || 'anthropic.claude-3-sonnet-20240229-v1:0'}
                   onChange={(e) => updateConfig(['llm', 'bedrockModelId'], e.target.value)}
                   className="select-field"
                 >
@@ -342,7 +342,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
                   Embedding Model ID
                 </label>
                 <select
-                  value={config.llm.embeddingModelId}
+                  value={config.llm?.embeddingModelId || 'amazon.titan-embed-text-v1'}
                   onChange={(e) => updateConfig(['llm', 'embeddingModelId'], e.target.value)}
                   className="select-field"
                 >
@@ -366,7 +366,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
                   Theme
                 </label>
                 <select
-                  value={config.ui.theme}
+                  value={config.ui?.theme || 'light'}
                   onChange={(e) => updateConfig(['ui', 'theme'], e.target.value)}
                   className="select-field"
                 >
@@ -381,7 +381,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
                   Default View
                 </label>
                 <select
-                  value={config.ui.defaultView}
+                  value={config.ui?.defaultView || 'list'}
                   onChange={(e) => updateConfig(['ui', 'defaultView'], e.target.value)}
                   className="select-field"
                 >
@@ -405,7 +405,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
                 <input
                   type="checkbox"
                   id="vscode-enabled"
-                  checked={config.integration.vscode.enabled}
+                  checked={config.integration?.vscode?.enabled || false}
                   onChange={(e) => updateConfig(['integration', 'vscode', 'enabled'], e.target.checked)}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
@@ -418,7 +418,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
                 <input
                   type="checkbox"
                   id="auto-capture"
-                  checked={config.integration.vscode.autoCapture}
+                  checked={config.integration?.vscode?.autoCapture || false}
                   onChange={(e) => updateConfig(['integration', 'vscode', 'autoCapture'], e.target.checked)}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
@@ -431,7 +431,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
                 <input
                   type="checkbox"
                   id="capture-commands"
-                  checked={config.integration.vscode.captureCommands}
+                  checked={config.integration?.vscode?.captureCommands || false}
                   onChange={(e) => updateConfig(['integration', 'vscode', 'captureCommands'], e.target.checked)}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
@@ -444,7 +444,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
                 <input
                   type="checkbox"
                   id="capture-files"
-                  checked={config.integration.vscode.captureFiles}
+                  checked={config.integration?.vscode?.captureFiles || false}
                   onChange={(e) => updateConfig(['integration', 'vscode', 'captureFiles'], e.target.checked)}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />

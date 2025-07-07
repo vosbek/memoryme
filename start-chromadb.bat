@@ -21,8 +21,8 @@ rem Create data directory
 if not exist "chromadb-data" mkdir "chromadb-data"
 
 rem Start ChromaDB server
-echo ChromaDB server starting on http://localhost:8000
+echo ChromaDB server starting on http://localhost:8001
 echo Data will be stored in: %cd%\chromadb-data
 echo.
 echo Press Ctrl+C to stop the server
-chroma run --path chromadb-data --port 8000
+chroma run --path chromadb-data --port 8001
