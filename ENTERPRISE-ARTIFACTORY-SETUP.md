@@ -50,17 +50,23 @@ npm view react --registry https://art.nwie.net/repository/npm/
 
 These packages **must** be available in your company's artifactory:
 
-### **Core Dependencies**
+### **Core Dependencies (Runtime)**
 - `sql.js` - Pure JavaScript SQLite (replaces better-sqlite3)
 - `@types/sql.js` - TypeScript definitions
 - `electron` - Desktop framework
 - `react` + `react-dom` - UI framework
-- `typescript` - Language support
+- `chromadb` - Vector database
+- `@azure/msal-node` - Microsoft 365 auth
 
-### **Build Dependencies**
-- `webpack` + `webpack-cli` - Bundling
+### **Critical Build Dependencies (DevDependencies)**
+- `webpack@5.92.1` + `webpack-cli@5.1.4` - Bundling (CRITICAL)
+- `typescript@5.5.3` - Language support (CRITICAL)
+- `electron@31.0.0` - Desktop framework (CRITICAL)
 - `ts-loader` - TypeScript compilation
 - `electron-builder` - Packaging
+- All `@types/*` packages - TypeScript definitions
+
+**⚠️ COMMON ISSUE**: DevDependencies often missing from corporate artifactories
 
 ### **Enterprise Benefits**
 - ✅ **No native modules** requiring compilation

@@ -32,19 +32,13 @@ export class SQLiteManager {
         // Specify the wasm file location - sql.js needs this
         locateFile: (file: string) => {
           // In Electron, try multiple potential paths for the WASM file
-          if (process.type === 'renderer') {
-            // In renderer process, use relative path
-            return path.join(process.resourcesPath || __dirname, 'node_modules/sql.js/dist', file);
+          const isDev = process.env.NODE_ENV === 'development';
+          if (isDev) {
+            // Development: use node_modules path from project root
+            return path.join(process.cwd(), 'node_modules/sql.js/dist', file);
           } else {
-            // In main process, check if we're in development or production
-            const isDev = process.env.NODE_ENV === 'development';
-            if (isDev) {
-              // Development: use node_modules path
-              return path.join(__dirname, '../../node_modules/sql.js/dist', file);
-            } else {
-              // Production: use packaged resources path
-              return path.join(process.resourcesPath || __dirname, '../node_modules/sql.js/dist', file);
-            }
+            // Production: use packaged resources path
+            return path.join(process.resourcesPath || path.join(process.cwd(), 'node_modules'), 'sql.js/dist', file);
           }
         }
       });

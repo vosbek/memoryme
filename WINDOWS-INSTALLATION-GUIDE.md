@@ -87,6 +87,18 @@ npm install
 ```
 ⏱️ **This will take 2-5 minutes** depending on your connection to art.nwie.net.
 
+**✅ Verify Installation Success:**
+```powershell
+# Check if webpack was installed correctly
+npx webpack --version
+
+# Check if all dependencies installed
+npm list --depth=0
+
+# If webpack not found, install explicitly:
+npm install webpack webpack-cli --save-dev
+```
+
 **✅ Enterprise Ready**: 
 - No native compilation needed - all dependencies are pure JavaScript!
 - All packages available from company artifactory (art.nwie.net)
@@ -233,6 +245,39 @@ npm install
 npm run build
 ```
 
+#### **"webpack is not recognized" Error**
+```powershell
+# This happens when webpack wasn't installed properly
+# Solution 1: Use npx to run webpack
+npx webpack --config webpack.renderer.config.js --mode production
+
+# Solution 2: Install webpack explicitly
+npm install webpack webpack-cli --save-dev
+
+# Solution 3: Check if node_modules/.bin is in PATH
+echo $env:PATH | Select-String "node_modules"
+
+# Solution 4: Run build with npx
+npm run build:react
+# If that fails, try:
+npx webpack --config webpack.renderer.config.js --mode production
+```
+
+#### **53 TypeScript Problems in VS Code**
+```powershell
+# Check if TypeScript is installed
+npx tsc --version
+
+# Install TypeScript if missing
+npm install typescript --save-dev
+
+# Run TypeScript check
+npx tsc --noEmit
+
+# Clear VS Code TypeScript cache
+# In VS Code: Ctrl+Shift+P → "TypeScript: Restart TS Server"
+```
+
 #### **Application won't start**
 ```powershell
 # Check if all dependencies installed correctly
@@ -318,13 +363,79 @@ npm cache clean --force
 ```powershell
 # If you get package not found errors:
 # 1. Verify the package exists in company artifactory
-# 2. Contact IT to ensure sql.js and @types/sql.js are available
-# 3. The sql.js migration ensures all packages are standard npm packages
+npm view webpack --registry https://art.nwie.net/repository/npm/
+npm view typescript --registry https://art.nwie.net/repository/npm/
+npm view electron --registry https://art.nwie.net/repository/npm/
 
-# Critical packages that must be available in art.nwie.net:
-# - sql.js (replaces better-sqlite3)
-# - @types/sql.js (TypeScript definitions)
-# - All other packages are standard dependencies
+# 2. Check what packages were actually installed
+npm list --depth=0
+
+# 3. Install missing dev dependencies manually
+npm install --save-dev webpack webpack-cli typescript electron
+
+# 4. If packages missing from artifactory, contact IT
+```
+
+#### **DevDependencies not installing from artifactory**
+```powershell
+# This happens when artifactory doesn't have all packages
+# Symptoms: npm install succeeds but shows low package count
+
+# Check if dev dependencies installed
+npm list webpack typescript electron
+# Should NOT show "(empty)"
+
+# Force install dev dependencies
+npm install --only=dev
+
+# Install critical missing packages manually
+npm install --save-dev webpack@5.92.1 webpack-cli@5.1.4 typescript@5.5.3 electron@31.0.0
+
+# CRITICAL: Install sql.js packages (often missed)
+npm install sql.js@1.8.0 @types/sql.js@1.4.9
+```
+
+#### **"Cannot find module 'sql.js'" Error**
+```powershell
+# This specific error means sql.js wasn't installed
+# Even though it's in package.json, it might be missing from node_modules
+
+# 1. Check if sql.js exists
+npm list sql.js
+# Should NOT show "(empty)"
+
+# 2. Install sql.js explicitly
+npm install sql.js@1.8.0 @types/sql.js@1.4.9
+
+# 3. Verify in artifactory
+npm view sql.js --registry https://art.nwie.net/artifactory/api/npm/npm/
+
+# 4. Check node_modules
+dir node_modules | Select-String "sql"
+```
+
+#### **Packages install but don't appear in node_modules (CRITICAL BUG)**
+```powershell
+# This is a serious artifactory configuration issue
+# Symptoms: npm says "added X packages" but they don't exist in node_modules
+
+# 1. Check what's actually installed
+dir node_modules | Select-String "webpack"
+Test-Path "node_modules\webpack"
+# If False, but npm said it installed webpack, this is the bug
+
+# 2. The application has been modified to use npx workaround
+# Scripts now use: npx webpack@5.92.1 instead of local webpack
+
+# 3. Try the build anyway (should work with npx)
+npm run build
+
+# 4. Contact IT about artifactory package extraction issues
+# Critical packages that must be available AND EXTRACTABLE in art.nwie.net:
+# - webpack@5.92.1 + webpack-cli@5.1.4 (build system)
+# - typescript@5.5.3 (language support)  
+# - electron@31.0.0 (desktop framework)
+# - sql.js@1.8.0 + @types/sql.js@1.4.9 (database)
 ```
 
 ---
