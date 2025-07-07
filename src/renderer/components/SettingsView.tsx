@@ -33,6 +33,30 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
       setConfig(appConfig);
     } catch (error) {
       console.error('Failed to load config:', error);
+      // Set a proper default config if loading fails
+      setConfig({
+        database: { 
+          sqlitePath: 'devmemory.db',
+          chromaPath: 'chromadb' 
+        },
+        llm: { 
+          awsRegion: 'us-east-1', 
+          bedrockModelId: 'anthropic.claude-3-sonnet-20240229-v1:0', 
+          embeddingModelId: 'amazon.titan-embed-text-v1' 
+        },
+        ui: { 
+          theme: 'light' as const, 
+          defaultView: 'list' as const 
+        },
+        integration: { 
+          vscode: { 
+            enabled: false, 
+            autoCapture: false, 
+            captureCommands: false, 
+            captureFiles: false 
+          } 
+        }
+      });
     } finally {
       setLoading(false);
     }
@@ -62,6 +86,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
       setM365Status(status);
     } catch (error) {
       console.error('Failed to load M365 status:', error);
+      // Set default M365 status if loading fails
+      setM365Status({ isAuthenticated: false });
     }
   };
 
@@ -71,6 +97,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
       setM365SyncStatus(status);
     } catch (error) {
       console.error('Failed to load M365 sync status:', error);
+      // Set default sync status if loading fails
+      setM365SyncStatus(null);
     }
   };
 
