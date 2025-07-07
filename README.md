@@ -29,9 +29,22 @@ DevMemory is an **Enterprise Developer Memory Assistant** that captures, stores,
 git clone <repository-url> memory
 cd memory
 npm install
+
+# For development (recommended):
+npm run dev
+
+# For production build:
 npm run build
-npm start
+electron .
+
+# Or create installer:
+npm run dist
 ```
+
+### **⚠️ Important Notes**
+- **NO** `npm start` script exists - use `npm run dev` for development
+- **Enterprise Ready**: Uses sql.js (pure JavaScript) - no native compilation required
+- **Offline Capable**: Core features work without internet (cloud AI optional)
 
 ## ✨ **Key Features**
 
@@ -79,10 +92,16 @@ npm start
 ### **Technology Stack**
 - **Frontend**: React 18 + TypeScript + Tailwind CSS
 - **Backend**: Electron + Node.js + TypeScript
-- **Database**: SQLite (structured) + ChromaDB (vectors)
+- **Database**: SQLite (sql.js - pure JavaScript) + ChromaDB (vectors)
 - **AI/ML**: AWS Bedrock (Claude 3 + Titan Embeddings)
 - **Integration**: Microsoft Graph API + MSAL Authentication
 - **Build**: Webpack + TypeScript + ESLint
+
+### **🏢 Enterprise Deployment Benefits**
+- ✅ **No Native Compilation**: Uses sql.js instead of better-sqlite3
+- ✅ **Registry Compatible**: Works with restricted npm registries
+- ✅ **Windows Enterprise Ready**: No Visual Studio Build Tools required
+- ✅ **NODE_MODULE_VERSION Safe**: Eliminates native module version conflicts
 
 ## 📋 **System Requirements**
 
@@ -132,17 +151,26 @@ git clone <repository-url>
 cd memory
 npm install
 
-# Start development server
+# Start development server (hot reload)
 npm run dev
 
 # Run tests
 npm test
+npm run test:watch    # Watch mode
+npm run test:coverage # Coverage report
 
 # Build for production
 npm run build
 
 # Package for distribution
-npm run package
+npm run dist           # Build + package
+npm run package:win    # Windows installer
+npm run package:mac    # macOS DMG
+npm run package:linux  # Linux AppImage
+
+# Code quality
+npm run lint           # ESLint + TypeScript
+npm run lint:fix       # Auto-fix issues
 ```
 
 ### **Project Structure**
@@ -195,11 +223,40 @@ src/
 
 #### Application Won't Start
 ```bash
-# Clear cache and rebuild
+# WRONG: npm start (doesn't exist)
+# CORRECT: npm run dev
+
+# Try development mode first:
+npm run dev
+
+# If that works, test production build:
+npm run build
+electron .
+
+# Clear cache and rebuild if needed:
 npm run clean
 npm install
 npm run build
-npm start
+```
+
+#### "npm start doesn't exist" Error
+```bash
+# This is correct - use these commands instead:
+npm run dev      # Development mode
+npm run build    # Production build
+electron .       # Run built app
+npm run dist     # Create installer
+```
+
+#### Native Module Compilation Errors
+```bash
+# This should NOT happen with sql.js migration
+# If you see better-sqlite3 errors:
+git pull origin main
+npm install
+
+# The app now uses sql.js (pure JavaScript)
+# No C++ compilation required
 ```
 
 #### Search Not Working
@@ -233,6 +290,9 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - ✅ Knowledge graph functionality
 - ✅ Microsoft 365 integration
 - ✅ AWS Bedrock AI integration
+- ✅ **Enterprise deployment ready** (sql.js migration)
+- ✅ **Pure JavaScript database** (no native compilation)
+- ✅ **Windows enterprise compatible** (restricted registries)
 
 ### **Planned Features**
 - 🔄 Real-time collaboration

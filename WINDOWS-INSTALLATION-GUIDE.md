@@ -11,9 +11,16 @@ This guide will walk you through installing DevMemory on a completely fresh Wind
 DevMemory is an **Enterprise Developer Memory Assistant** that:
 - Captures and stores development knowledge using AI-powered vector search
 - Integrates with Microsoft 365 (Outlook, Teams, SharePoint, OneDrive)
-- Uses ChromaDB for semantic search and SQLite for structured data
+- Uses ChromaDB for semantic search and SQLite (sql.js) for structured data
 - Builds knowledge graphs from your development activities
 - Works 100% locally with optional cloud AI enhancements
+
+### **🏢 Enterprise Deployment Ready**
+- ✅ **Pure JavaScript Database**: Uses sql.js instead of better-sqlite3 (no native compilation)
+- ✅ **Artifactory Compatible**: Works with company registry (art.nwie.net)
+- ✅ **No Build Tools Required**: No Visual Studio Build Tools or C++ compiler needed
+- ✅ **NODE_MODULE_VERSION Safe**: Eliminates native module version conflicts
+- ✅ **Standard npm Packages**: All dependencies available in corporate artifactories
 
 ---
 
@@ -60,17 +67,40 @@ DevMemory is an **Enterprise Developer Memory Assistant** that:
    cd memory
    ```
 
-### **Step 5: Install Dependencies**
+### **Step 5: Configure Enterprise Registry**
+
+**🏢 CRITICAL: Configure company artifactory first**
+
+```powershell
+# Configure npm to use company registry
+npm config set registry https://art.nwie.net/repository/npm/
+npm config set @types:registry https://art.nwie.net/repository/npm/
+
+# Verify configuration
+npm config get registry
+# Should show: https://art.nwie.net/repository/npm/
+```
+
+### **Step 6: Install Dependencies**
 ```powershell
 npm install
 ```
-⏱️ **This will take 2-5 minutes** depending on your internet speed.
+⏱️ **This will take 2-5 minutes** depending on your connection to art.nwie.net.
 
-### **Step 6: Configure Environment (Optional)**
-1. **Copy the example environment file:**
+**✅ Enterprise Ready**: 
+- No native compilation needed - all dependencies are pure JavaScript!
+- All packages available from company artifactory (art.nwie.net)
+- No external registry dependencies required
+
+### **Step 7: Configure Environment (Optional)**
+
+**⚠️ Note**: The `.env.example` file may not exist yet. This step is completely optional - the app works without it.
+
+1. **Copy the example environment file (if it exists):**
    ```powershell
    copy .env.example .env
    ```
+   If this fails, you can create a `.env` file manually or skip this step.
 2. **Edit `.env` file** (optional - app works without this):
    ```
    # For AI features (optional)
@@ -83,7 +113,7 @@ npm install
    NODE_ENV=production
    ```
 
-### **Step 7: Build the Application**
+### **Step 8: Build the Application**
 ```powershell
 npm run build
 ```
@@ -94,9 +124,25 @@ npm run build
 - Files created in `dist/` folder
 - Build completes with "compiled successfully"
 
-### **Step 8: Start the Application**
+### **Step 9: Start the Application**
+
+**⚠️ IMPORTANT: There is NO `npm start` script**
+
+**For Development (Recommended):**
 ```powershell
-npm start
+npm run dev
+```
+
+**For Production Testing:**
+```powershell
+# After npm run build:
+npx electron .
+```
+
+**Or Create Windows Installer:**
+```powershell
+npm run dist
+# Creates: dist-electron/DevMemory-Setup-{version}.exe
 ```
 
 🎉 **DevMemory should now open!**
@@ -160,7 +206,11 @@ After installation, verify these features work:
    AZURE_CLIENT_ID=your-copied-client-id
    ```
 
-4. **Restart the application**
+4. **Restart the application:**
+   ```powershell
+   # Stop current app if running (Ctrl+C)
+   npm run dev
+   ```
 
 ---
 
@@ -190,7 +240,9 @@ npm install
 # Try rebuilding
 npm run clean
 npm run build
-npm start
+
+# IMPORTANT: Use npm run dev, NOT npm start
+npm run dev
 ```
 
 #### **"electron command not found"**
@@ -211,6 +263,69 @@ taskkill /PID <process-id> /F
 #### **Windows Defender blocking installation**
 - Add the `memory` folder to Windows Defender exclusions
 - Go to Windows Security → Virus & threat protection → Exclusions
+
+#### **"npm start doesn't exist" Error**
+```powershell
+# This is CORRECT - the npm start script was intentionally removed
+# Use these commands instead:
+
+# For development:
+npm run dev
+
+# For production testing:
+npm run build
+npx electron .
+
+# For creating installer:
+npm run dist
+```
+
+#### **Native module compilation errors (Should NOT happen)**
+```powershell
+# If you see better-sqlite3 or node-gyp errors:
+# This should NOT occur with the sql.js migration
+
+# Ensure you have the latest code:
+git pull origin main
+npm install
+
+# The app now uses sql.js (pure JavaScript)
+# No C++ compilation or Visual Studio Build Tools required
+```
+
+#### **Enterprise registry/artifactory issues**
+```powershell
+# Ensure company artifactory is configured:
+npm config set registry https://art.nwie.net/repository/npm/
+npm config set @types:registry https://art.nwie.net/repository/npm/
+
+# Check current configuration:
+npm config get registry
+npm config list
+
+# If specific packages fail, check artifactory availability:
+npm view sql.js --registry https://art.nwie.net/repository/npm/
+npm view @types/sql.js --registry https://art.nwie.net/repository/npm/
+
+# Clear npm cache if needed:
+npm cache clean --force
+
+# All dependencies are now registry-compatible
+# No native modules that require compilation
+```
+
+#### **"Package not found" errors from artifactory**
+```powershell
+# If you get package not found errors:
+# 1. Verify the package exists in company artifactory
+# 2. Contact IT to ensure sql.js and @types/sql.js are available
+# 3. The sql.js migration ensures all packages are standard npm packages
+
+# Critical packages that must be available in art.nwie.net:
+# - sql.js (replaces better-sqlite3)
+# - @types/sql.js (TypeScript definitions)
+# - All other packages are standard dependencies
+```
 
 ---
 
@@ -236,9 +351,15 @@ memory/
 
 DevMemory stores your data in:
 - **Windows:** `C:\Users\%USERNAME%\AppData\Roaming\DevMemory\`
-  - `devmemory.db` - Your memories (SQLite database)
+  - `devmemory.db` - Your memories (SQLite database via sql.js)
   - `chromadb/` - Vector search index
   - `m365-config` - Microsoft 365 settings
+
+**🏢 Enterprise Benefits:**
+- Database file is pure binary (no native dependencies)
+- Can be backed up, moved, or restored easily
+- Works across different Windows versions and architectures
+- No registry dependencies or system-level database drivers
 
 ---
 
@@ -315,7 +436,9 @@ rmdir /s node_modules
 del package-lock.json
 npm install
 npm run build
-npm start
+
+# IMPORTANT: Use npm run dev, NOT npm start
+npm run dev
 ```
 
 ---

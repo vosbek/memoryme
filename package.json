@@ -43,7 +43,6 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.0",
@@ -80,7 +79,7 @@
     "@aws-sdk/client-bedrock-runtime": "^3.614.0",
     "@azure/msal-node": "^2.13.0",
     "@microsoft/microsoft-graph-client": "^3.0.7",
-    "better-sqlite3": "^11.1.2",
+    "@types/sql.js": "^1.4.9",
     "chromadb": "^1.9.2",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
@@ -89,6 +88,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.24.1",
+    "sql.js": "^1.8.0",
     "uuid": "^10.0.0"
   },
   "build": {
@@ -136,7 +136,9 @@
       "artifactName": "DevMemory-Setup-${version}.${ext}",
       "publisherName": "Enterprise Development Team",
       "sign": "./scripts/sign-windows.js",
-      "signingHashAlgorithms": ["sha256"],
+      "signingHashAlgorithms": [
+        "sha256"
+      ],
       "certificateFile": "certificates/code-signing.p12",
       "certificatePassword": ""
     },

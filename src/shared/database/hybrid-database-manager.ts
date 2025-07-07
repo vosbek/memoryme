@@ -4,7 +4,6 @@ import { VectorStore } from './vector-store';
 import { KnowledgeGraphManager } from './knowledge-graph';
 import { Memory, MemoryType } from '../types';
 import { createLogger } from '../utils/logger';
-import Database from 'better-sqlite3';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -59,9 +58,8 @@ export class HybridDatabaseManager {
     this.legacyVectorStore = new VectorStore(vectorPath);
     this.chromaVectorStore = new ChromaDBVectorStore(chromaPath);
     
-    // Initialize knowledge graph with same SQLite instance
-    const db = new Database(dbPath);
-    this.knowledgeGraph = new KnowledgeGraphManager(db);
+    // Note: Knowledge graph will be initialized after SQLiteManager is ready
+    this.knowledgeGraph = new KnowledgeGraphManager();
 
     this.logger.info('Hybrid database manager initialized', { 
       dbPath, 
@@ -75,7 +73,15 @@ export class HybridDatabaseManager {
     try {
       this.logger.info('Initializing hybrid database system...');
 
-      // Initialize legacy vector store first (for migration)
+      // Initialize SQLite database first (required for all other operations)
+      await this.sqliteManager.initialize();
+      this.logger.info('✓ SQLite database initialized');
+
+      // Initialize knowledge graph after SQLite is ready
+      await this.knowledgeGraph.initialize();
+      this.logger.info('✓ Knowledge graph initialized');
+
+      // Initialize legacy vector store (for migration)
       await this.legacyVectorStore.initialize();
       this.logger.info('✓ Legacy vector store initialized');
 
@@ -98,7 +104,6 @@ export class HybridDatabaseManager {
         this.useChromaDB = false;
       }
 
-      this.logger.info('✓ Knowledge graph initialized');
       this.isInitialized = true;
       
       this.logger.info('Hybrid database system initialization completed', {

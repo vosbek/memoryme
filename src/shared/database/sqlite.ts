@@ -1,9 +1,11 @@
-import Database from 'better-sqlite3';
+import initSqlJs, { Database as SqlJsDatabase } from 'sql.js';
 import { Memory, MemoryType, MemoryMetadata } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { createLogger } from '../utils/logger';
 import * as crypto from 'crypto';
 import * as os from 'os';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export interface DatabaseOptions {
   enableEncryption?: boolean;
@@ -11,28 +13,63 @@ export interface DatabaseOptions {
 }
 
 export class SQLiteManager {
-  private db: Database.Database;
+  private db: SqlJsDatabase | null = null;
   private logger = createLogger('SQLiteManager');
   private options: DatabaseOptions;
+  private dbPath: string;
+  private sqlJs: any = null;
 
   constructor(dbPath: string, options: DatabaseOptions = {}) {
     this.options = options;
+    this.dbPath = dbPath;
     this.logger.info('Initializing SQLite database', { dbPath, encrypted: !!options.enableEncryption });
-    
+  }
+
+  async initialize(): Promise<void> {
     try {
-      this.db = new Database(dbPath);
+      // Initialize sql.js
+      this.sqlJs = await initSqlJs({
+        // Specify the wasm file location - sql.js needs this
+        locateFile: (file: string) => {
+          // In Electron, try multiple potential paths for the WASM file
+          if (process.type === 'renderer') {
+            // In renderer process, use relative path
+            return path.join(process.resourcesPath || __dirname, 'node_modules/sql.js/dist', file);
+          } else {
+            // In main process, check if we're in development or production
+            const isDev = process.env.NODE_ENV === 'development';
+            if (isDev) {
+              // Development: use node_modules path
+              return path.join(__dirname, '../../node_modules/sql.js/dist', file);
+            } else {
+              // Production: use packaged resources path
+              return path.join(process.resourcesPath || __dirname, '../node_modules/sql.js/dist', file);
+            }
+          }
+        }
+      });
+
+      // Load existing database file or create new one
+      let buffer: Uint8Array | undefined;
+      if (fs.existsSync(this.dbPath)) {
+        this.logger.info('Loading existing database file');
+        buffer = fs.readFileSync(this.dbPath);
+      }
+
+      // Create database instance
+      this.db = new this.sqlJs.Database(buffer);
       
       // Enable encryption if requested
-      if (options.enableEncryption) {
-        this.enableEncryption(options.encryptionKey);
+      if (this.options.enableEncryption) {
+        this.enableEncryption(this.options.encryptionKey);
       }
       
       this.logger.info('Database connection established');
-      this.init();
+      await this.init();
       this.logger.info('Database initialization completed');
     } catch (error) {
       this.logger.error('Database initialization failed', error);
-      throw new Error(`Failed to initialize database at ${dbPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Failed to initialize database at ${this.dbPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -41,9 +78,8 @@ export class SQLiteManager {
       // Generate or use provided encryption key
       const key = encryptionKey || this.generateEncryptionKey();
       
-      // Note: SQLite encryption with better-sqlite3 requires SQLCipher compilation
+      // Note: sql.js doesn't have built-in encryption like SQLCipher
       // For now, we'll implement application-level encryption for sensitive fields
-      // In production, consider using SQLCipher or @journeyapps/sqlcipher
       
       this.logger.info('Database encryption enabled (application-level)');
       
@@ -114,8 +150,13 @@ export class SQLiteManager {
     }
   }
 
-  private init() {
-    this.db.exec(`
+  private async init(): Promise<void> {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
+    // Create tables and indexes
+    const sqlStatements = `
       CREATE TABLE IF NOT EXISTS memories (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
@@ -131,32 +172,6 @@ export class SQLiteManager {
       CREATE INDEX IF NOT EXISTS idx_memories_created_at ON memories(created_at);
       CREATE INDEX IF NOT EXISTS idx_memories_updated_at ON memories(updated_at);
       CREATE INDEX IF NOT EXISTS idx_memories_title ON memories(title);
-
-      CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(
-        id UNINDEXED,
-        title,
-        content,
-        tags,
-        content='memories',
-        content_rowid='rowid'
-      );
-
-      CREATE TRIGGER IF NOT EXISTS memories_ai AFTER INSERT ON memories BEGIN
-        INSERT INTO memories_fts(id, title, content, tags)
-        VALUES (new.id, new.title, new.content, new.tags);
-      END;
-
-      CREATE TRIGGER IF NOT EXISTS memories_ad AFTER DELETE ON memories BEGIN
-        INSERT INTO memories_fts(memories_fts, id, title, content, tags)
-        VALUES ('delete', old.id, old.title, old.content, old.tags);
-      END;
-
-      CREATE TRIGGER IF NOT EXISTS memories_au AFTER UPDATE ON memories BEGIN
-        INSERT INTO memories_fts(memories_fts, id, title, content, tags)
-        VALUES ('delete', old.id, old.title, old.content, old.tags);
-        INSERT INTO memories_fts(id, title, content, tags)
-        VALUES (new.id, new.title, new.content, new.tags);
-      END;
 
       CREATE TABLE IF NOT EXISTS tags (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -174,11 +189,41 @@ export class SQLiteManager {
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       );
-    `);
+    `;
+
+    // Execute all statements
+    this.db.exec(sqlStatements);
+    await this.saveDatabase();
+  }
+
+  private async saveDatabase(): Promise<void> {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      // Export database to buffer and save to file
+      const buffer = this.db.export();
+      
+      // Ensure directory exists
+      const dir = path.dirname(this.dbPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      fs.writeFileSync(this.dbPath, buffer);
+    } catch (error) {
+      this.logger.error('Failed to save database', error);
+      throw error;
+    }
   }
 
   async createMemory(memory: Omit<Memory, 'id' | 'createdAt' | 'updatedAt'>): Promise<Memory> {
     this.logger.debug('Creating new memory', { title: memory.title, type: memory.type });
+    
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
     
     try {
       const now = new Date();
@@ -194,7 +239,7 @@ export class SQLiteManager {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
-      const result = stmt.run(
+      stmt.run([
         newMemory.id,
         newMemory.title,
         newMemory.content,
@@ -203,12 +248,14 @@ export class SQLiteManager {
         JSON.stringify(newMemory.metadata || {}),
         newMemory.createdAt.getTime(),
         newMemory.updatedAt.getTime()
-      );
+      ]);
+
+      // Save database to file
+      await this.saveDatabase();
 
       this.logger.info('Memory created successfully', { 
         id: newMemory.id, 
-        title: newMemory.title,
-        changes: result.changes 
+        title: newMemory.title
       });
 
       // Verify the memory was actually inserted
@@ -225,17 +272,27 @@ export class SQLiteManager {
   }
 
   async getMemory(id: string): Promise<Memory | null> {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
     const stmt = this.db.prepare('SELECT * FROM memories WHERE id = ?');
-    const row = stmt.get(id) as any;
+    const result = stmt.getAsObject([id]);
     
-    if (!row) return null;
+    if (!result || Object.keys(result).length === 0) {
+      return null;
+    }
     
-    return this.rowToMemory(row);
+    return this.rowToMemory(result);
   }
 
   async updateMemory(id: string, updates: Partial<Omit<Memory, 'id' | 'createdAt'>>): Promise<Memory | null> {
     const existing = await this.getMemory(id);
     if (!existing) return null;
+
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
 
     const updated: Memory = {
       ...existing,
@@ -249,7 +306,7 @@ export class SQLiteManager {
       WHERE id = ?
     `);
 
-    stmt.run(
+    stmt.run([
       updated.title,
       updated.content,
       updated.type,
@@ -257,19 +314,29 @@ export class SQLiteManager {
       JSON.stringify(updated.metadata),
       updated.updatedAt.getTime(),
       id
-    );
+    ]);
 
+    await this.saveDatabase();
     return updated;
   }
 
   async deleteMemory(id: string): Promise<boolean> {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
     const stmt = this.db.prepare('DELETE FROM memories WHERE id = ?');
-    const result = stmt.run(id);
-    return result.changes > 0;
+    stmt.run([id]);
+    await this.saveDatabase();
+    return true;
   }
 
   async searchMemories(query: string, limit: number = 50, offset: number = 0): Promise<Memory[]> {
     this.logger.debug('Searching memories', { query, limit, offset });
+    
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
     
     try {
       // Use simple LIKE search for reliability
@@ -281,13 +348,17 @@ export class SQLiteManager {
         LIMIT ? OFFSET ?
       `);
       
-      const rows = stmt.all(searchPattern, searchPattern, searchPattern, limit, offset) as any[];
-      const results = rows.map(row => this.rowToMemory(row));
+      const results: Memory[] = [];
+      stmt.bind([searchPattern, searchPattern, searchPattern, limit, offset]);
+      
+      while (stmt.step()) {
+        const row = stmt.getAsObject();
+        results.push(this.rowToMemory(row));
+      }
       
       this.logger.info('Search completed', { 
         query, 
-        resultsCount: results.length,
-        totalRows: rows.length 
+        resultsCount: results.length
       });
       
       return results;
@@ -298,6 +369,10 @@ export class SQLiteManager {
   }
 
   async getMemoriesByType(type: MemoryType, limit: number = 50, offset: number = 0): Promise<Memory[]> {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
     const stmt = this.db.prepare(`
       SELECT * FROM memories 
       WHERE type = ? 
@@ -305,32 +380,65 @@ export class SQLiteManager {
       LIMIT ? OFFSET ?
     `);
 
-    const rows = stmt.all(type, limit, offset) as any[];
-    return rows.map(row => this.rowToMemory(row));
+    const results: Memory[] = [];
+    stmt.bind([type, limit, offset]);
+    
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      results.push(this.rowToMemory(row));
+    }
+
+    return results;
   }
 
   async getMemoriesByTags(tags: string[], limit: number = 50, offset: number = 0): Promise<Memory[]> {
-    const placeholders = tags.map(() => 'JSON_EXTRACT(tags, "$[*]") LIKE ?').join(' OR ');
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
+    // Build OR conditions for each tag
+    const conditions = tags.map(() => 'tags LIKE ?').join(' OR ');
     const stmt = this.db.prepare(`
       SELECT * FROM memories 
-      WHERE ${placeholders}
+      WHERE ${conditions}
       ORDER BY updated_at DESC 
       LIMIT ? OFFSET ?
     `);
 
     const params = [...tags.map(tag => `%${tag}%`), limit, offset];
-    const rows = stmt.all(...params) as any[];
-    return rows.map(row => this.rowToMemory(row));
+    const results: Memory[] = [];
+    stmt.bind(params);
+    
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      results.push(this.rowToMemory(row));
+    }
+
+    return results;
   }
 
   async getAllTags(): Promise<string[]> {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
     const stmt = this.db.prepare('SELECT DISTINCT name FROM tags ORDER BY name');
-    const rows = stmt.all() as any[];
-    return rows.map(row => row.name);
+    const results: string[] = [];
+    
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      results.push(row.name as string);
+    }
+
+    return results;
   }
 
   async getRecentMemories(limit: number = 20): Promise<Memory[]> {
     this.logger.debug('Getting recent memories', { limit });
+    
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
     
     try {
       const stmt = this.db.prepare(`
@@ -339,8 +447,13 @@ export class SQLiteManager {
         LIMIT ?
       `);
 
-      const rows = stmt.all(limit) as any[];
-      const results = rows.map(row => this.rowToMemory(row));
+      const results: Memory[] = [];
+      stmt.bind([limit]);
+      
+      while (stmt.step()) {
+        const row = stmt.getAsObject();
+        results.push(this.rowToMemory(row));
+      }
       
       this.logger.info('Retrieved recent memories', { 
         count: results.length,
@@ -357,14 +470,22 @@ export class SQLiteManager {
   async getAllMemories(): Promise<Memory[]> {
     this.logger.debug('Getting all memories');
     
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+    
     try {
       const stmt = this.db.prepare(`
         SELECT * FROM memories 
         ORDER BY updated_at DESC
       `);
 
-      const rows = stmt.all() as any[];
-      const results = rows.map(row => this.rowToMemory(row));
+      const results: Memory[] = [];
+      
+      while (stmt.step()) {
+        const row = stmt.getAsObject();
+        results.push(this.rowToMemory(row));
+      }
       
       this.logger.info('Retrieved all memories', { count: results.length });
       
@@ -376,10 +497,15 @@ export class SQLiteManager {
   }
 
   async getMemoryCount(): Promise<number> {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
     try {
       const stmt = this.db.prepare('SELECT COUNT(*) as count FROM memories');
-      const result = stmt.get() as any;
-      const count = result.count || 0;
+      stmt.step();
+      const result = stmt.getAsObject();
+      const count = result.count as number || 0;
       
       this.logger.debug('Memory count retrieved', { count });
       return count;
@@ -389,9 +515,12 @@ export class SQLiteManager {
     }
   }
 
-  private safeJsonParse(jsonString: string, fallback: any): any {
+  private safeJsonParse(jsonString: any, fallback: any): any {
     try {
-      return JSON.parse(jsonString || JSON.stringify(fallback));
+      if (typeof jsonString === 'string') {
+        return JSON.parse(jsonString);
+      }
+      return jsonString || fallback;
     } catch (error) {
       console.warn('Failed to parse JSON, using fallback:', jsonString, error);
       return fallback;
@@ -400,18 +529,22 @@ export class SQLiteManager {
 
   private rowToMemory(row: any): Memory {
     return {
-      id: row.id,
-      title: row.title,
-      content: row.content,
+      id: row.id as string,
+      title: row.title as string,
+      content: row.content as string,
       type: row.type as MemoryType,
       tags: this.safeJsonParse(row.tags, []),
       metadata: this.safeJsonParse(row.metadata, {}),
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at),
+      createdAt: new Date(row.created_at as number),
+      updatedAt: new Date(row.updated_at as number),
     };
   }
 
-  close() {
-    this.db.close();
+  async close(): Promise<void> {
+    if (this.db) {
+      await this.saveDatabase();
+      this.db.close();
+      this.db = null;
+    }
   }
 }
