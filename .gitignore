@@ -64,6 +64,14 @@ Thumbs.db
 # AWS credentials (should use AWS credentials file instead)
 aws-credentials.json
 
+# Code signing certificates (SECURITY: Never commit certificates)
+certificates/*.p12
+certificates/*.pfx
+certificates/*.pem
+certificates/*.key
+certificates/*.crt
+!certificates/README.md
+
 # Electron build artifacts
 *.asar
 *.dmg

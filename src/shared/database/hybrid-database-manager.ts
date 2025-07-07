@@ -1,4 +1,4 @@
-import { SQLiteManager } from './sqlite';
+import { SQLiteManager, DatabaseOptions } from './sqlite';
 import { ChromaDBVectorStore } from './chromadb-vector-store';
 import { VectorStore } from './vector-store';
 import { KnowledgeGraphManager } from './knowledge-graph';
@@ -40,7 +40,7 @@ export class HybridDatabaseManager {
   private useChromaDB = false; // Feature flag for ChromaDB migration
   private isInitialized = false;
 
-  constructor(dataPath: string) {
+  constructor(dataPath: string, options: { enableEncryption?: boolean } = {}) {
     const dbPath = path.join(dataPath, 'devmemory.db');
     const vectorPath = path.join(dataPath, 'vector-data.json');
     const chromaPath = path.join(dataPath, 'chromadb');
@@ -50,8 +50,12 @@ export class HybridDatabaseManager {
       fs.mkdirSync(dataPath, { recursive: true });
     }
 
-    // Initialize components
-    this.sqliteManager = new SQLiteManager(dbPath);
+    // Initialize components with encryption support
+    const dbOptions: DatabaseOptions = {
+      enableEncryption: options.enableEncryption || false
+    };
+    
+    this.sqliteManager = new SQLiteManager(dbPath, dbOptions);
     this.legacyVectorStore = new VectorStore(vectorPath);
     this.chromaVectorStore = new ChromaDBVectorStore(chromaPath);
     
@@ -62,7 +66,8 @@ export class HybridDatabaseManager {
     this.logger.info('Hybrid database manager initialized', { 
       dbPath, 
       vectorPath, 
-      chromaPath 
+      chromaPath,
+      encrypted: dbOptions.enableEncryption
     });
   }
 

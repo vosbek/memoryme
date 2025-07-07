@@ -236,7 +236,7 @@ export class M365AuthenticationService {
 
       const authUrlRequest: AuthorizationUrlRequest = {
         scopes: scopes || this.defaultScopes,
-        redirectUri: 'http://localhost',
+        redirectUri: 'http://localhost:3000',
         prompt: 'select_account',
         extraQueryParameters: {
           'domain_hint': (await this.detectUserDomain()) || ''
@@ -250,29 +250,173 @@ export class M365AuthenticationService {
       // Implement interactive authentication flow for Electron
       return new Promise((resolve) => {
         const { shell } = require('electron');
+        const http = require('http');
+        const url = require('url');
         
-        // Open auth URL in system browser for security
-        shell.openExternal(authUrl).then(() => {
-          this.logger.info('Authentication URL opened in browser');
+        // Create local HTTP server to capture OAuth callback
+        const server = http.createServer();
+        const port = 3000;
+        
+        server.on('request', async (req: any, res: any) => {
+          const parsedUrl = url.parse(req.url, true);
           
-          // For now, provide instructions to user
-          // In a production environment, you would implement:
-          // 1. Local HTTP server to capture callback
-          // 2. Deep link handling for the callback
-          // 3. Automatic token exchange
+          if (parsedUrl.pathname === '/') {
+            try {
+              // Extract authorization code from callback
+              const authCode = parsedUrl.query.code as string;
+              const state = parsedUrl.query.state as string;
+              
+              if (authCode) {
+                this.logger.info('Authorization code received from OAuth callback');
+                
+                // Exchange authorization code for tokens
+                const tokenRequest: AuthorizationCodeRequest = {
+                  scopes: scopes || this.defaultScopes,
+                  redirectUri: `http://localhost:${port}`,
+                  code: authCode,
+                };
+                
+                try {
+                  const response = await this.pca?.acquireTokenByCode(tokenRequest);
+                  
+                  if (!response) {
+                    throw new Error('Token acquisition failed - no response');
+                  }
+                  
+                  // Send success response to browser
+                  res.writeHead(200, { 'Content-Type': 'text/html' });
+                  res.end(`
+                    <html>
+                      <head><title>DevMemory - Authentication Successful</title></head>
+                      <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+                        <h1 style="color: green;">✓ Authentication Successful</h1>
+                        <p>You can now close this browser window and return to DevMemory.</p>
+                        <script>
+                          setTimeout(() => window.close(), 3000);
+                        </script>
+                      </body>
+                    </html>
+                  `);
+                  
+                  server.close();
+                  
+                  resolve({
+                    success: true,
+                    account: response.account || undefined,
+                    accessToken: response.accessToken
+                  });
+                  
+                } catch (tokenError: any) {
+                  this.logger.error('Token exchange failed', tokenError);
+                  
+                  // Send error response to browser
+                  res.writeHead(400, { 'Content-Type': 'text/html' });
+                  res.end(`
+                    <html>
+                      <head><title>DevMemory - Authentication Error</title></head>
+                      <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+                        <h1 style="color: red;">✗ Authentication Failed</h1>
+                        <p>Token exchange failed: ${tokenError.message}</p>
+                        <p>Please try again or contact your administrator.</p>
+                      </body>
+                    </html>
+                  `);
+                  
+                  server.close();
+                  
+                  resolve({
+                    success: false,
+                    error: `Token exchange failed: ${tokenError.message}`
+                  });
+                }
+              } else {
+                // Handle error callback
+                const error = parsedUrl.query.error as string;
+                const errorDescription = parsedUrl.query.error_description as string;
+                
+                this.logger.warn('OAuth callback received error', { error, errorDescription });
+                
+                res.writeHead(400, { 'Content-Type': 'text/html' });
+                res.end(`
+                  <html>
+                    <head><title>DevMemory - Authentication Error</title></head>
+                    <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+                      <h1 style="color: red;">✗ Authentication Failed</h1>
+                      <p>Error: ${error}</p>
+                      <p>${errorDescription || 'Please try again or contact your administrator.'}</p>
+                    </body>
+                  </html>
+                `);
+                
+                server.close();
+                
+                resolve({
+                  success: false,
+                  error: errorDescription || error || 'Authentication failed'
+                });
+              }
+            } catch (callbackError: any) {
+              this.logger.error('OAuth callback processing failed', callbackError);
+              
+              res.writeHead(500, { 'Content-Type': 'text/html' });
+              res.end(`
+                <html>
+                  <head><title>DevMemory - Authentication Error</title></head>
+                  <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+                    <h1 style="color: red;">✗ Authentication Error</h1>
+                    <p>Callback processing failed. Please try again.</p>
+                  </body>
+                </html>
+              `);
+              
+              server.close();
+              
+              resolve({
+                success: false,
+                error: `Callback processing failed: ${callbackError.message}`
+              });
+            }
+          }
+        });
+        
+        // Start local server
+        server.listen(port, 'localhost', () => {
+          this.logger.info(`OAuth callback server started on port ${port}`);
           
-          resolve({
-            success: false,
-            error: 'Please complete authentication in your browser, then restart the application. Enterprise SSO and device code flow will be implemented in a future update.',
-            requiresInteraction: true
-          });
-        }).catch((error: any) => {
-          resolve({
-            success: false,
-            error: `Failed to open authentication URL: ${error.message}`,
-            requiresInteraction: true
+          // Open auth URL in system browser
+          shell.openExternal(authUrl).then(() => {
+            this.logger.info('Authentication URL opened in browser');
+          }).catch((error: any) => {
+            server.close();
+            resolve({
+              success: false,
+              error: `Failed to open authentication URL: ${error.message}`,
+              requiresInteraction: true
+            });
           });
         });
+        
+        // Handle server errors
+        server.on('error', (serverError: any) => {
+          this.logger.error('OAuth callback server error', serverError);
+          server.close();
+          resolve({
+            success: false,
+            error: `Authentication server failed: ${serverError.message}`
+          });
+        });
+        
+        // Add timeout to prevent hanging
+        setTimeout(() => {
+          if (server.listening) {
+            this.logger.warn('Authentication timeout - closing server');
+            server.close();
+            resolve({
+              success: false,
+              error: 'Authentication timeout. Please try again.'
+            });
+          }
+        }, 300000); // 5 minute timeout
       });
 
     } catch (error: any) {
