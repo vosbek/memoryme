@@ -23,108 +23,18 @@
   "contributes": {
     "commands": [
       {
-        "command": "devmemory.captureSelection",
-        "title": "Capture Selection as Memory",
-        "category": "DevMemory"
-      },
-      {
-        "command": "devmemory.captureFile",
-        "title": "Capture Current File as Memory",
-        "category": "DevMemory"
-      },
-      {
-        "command": "devmemory.searchMemories",
-        "title": "Search Memories",
-        "category": "DevMemory"
-      },
-      {
-        "command": "devmemory.openApp",
-        "title": "Open DevMemory App",
-        "category": "DevMemory"
-      },
-      {
         "command": "devmemory.quickCapture",
-        "title": "Quick Capture",
-        "category": "DevMemory"
-      },
-      {
-        "command": "devmemory.insertMemory",
-        "title": "Insert Memory",
+        "title": "Open DevMemory Panel",
         "category": "DevMemory"
       }
     ],
     "keybindings": [
-      {
-        "command": "devmemory.captureSelection",
-        "key": "ctrl+shift+m",
-        "mac": "cmd+shift+m",
-        "when": "editorHasSelection"
-      },
-      {
-        "command": "devmemory.searchMemories",
-        "key": "ctrl+shift+f",
-        "mac": "cmd+shift+f"
-      },
       {
         "command": "devmemory.quickCapture",
         "key": "ctrl+alt+m",
         "mac": "cmd+alt+m"
       }
     ],
-    "menus": {
-      "editor/context": [
-        {
-          "command": "devmemory.captureSelection",
-          "when": "editorHasSelection",
-          "group": "9_cutcopypaste@4"
-        }
-      ],
-      "editor/title": [
-        {
-          "command": "devmemory.captureFile",
-          "group": "navigation@1"
-        }
-      ],
-      "commandPalette": [
-        {
-          "command": "devmemory.captureSelection",
-          "when": "editorHasSelection"
-        },
-        {
-          "command": "devmemory.captureFile"
-        },
-        {
-          "command": "devmemory.searchMemories"
-        },
-        {
-          "command": "devmemory.openApp"
-        },
-        {
-          "command": "devmemory.quickCapture"
-        },
-        {
-          "command": "devmemory.insertMemory"
-        }
-      ]
-    },
-    "views": {
-      "explorer": [
-        {
-          "id": "devmemoryExplorer",
-          "name": "DevMemory",
-          "when": "devmemory.enabled"
-        }
-      ]
-    },
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "devmemory",
-          "title": "DevMemory",
-          "icon": "$(book)"
-        }
-      ]
-    },
     "configuration": {
       "title": "DevMemory",
       "properties": {

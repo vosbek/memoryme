@@ -1,0 +1,9 @@
+out/
+node_modules/
+.vscode-test/
+.vscode-test-web/
+*.tsbuildinfo
+*.vsix
+
+# Only ignore during development, we'll put releases in dist/
+!dist/*.vsix

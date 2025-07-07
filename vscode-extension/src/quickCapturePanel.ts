@@ -58,6 +58,12 @@ export class QuickCapturePanel {
                     case 'getRecentMemories':
                         await this.handleGetRecentMemories();
                         break;
+                    case 'closePanel':
+                        this.dispose();
+                        break;
+                    case 'hidePanel':
+                        this._panel.dispose();
+                        break;
                 }
             },
             null,
@@ -145,8 +151,56 @@ export class QuickCapturePanel {
             font-size: var(--vscode-font-size);
             color: var(--vscode-foreground);
             background-color: var(--vscode-editor-background);
-            padding: 20px;
+            padding: 0;
             margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .title-bar {
+            background-color: var(--vscode-titleBar-activeBackground);
+            color: var(--vscode-titleBar-activeForeground);
+            padding: 8px 16px;
+            font-weight: bold;
+            border-bottom: 1px solid var(--vscode-titleBar-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            -webkit-app-region: drag;
+        }
+        
+        .title-bar-buttons {
+            display: flex;
+            gap: 8px;
+            -webkit-app-region: no-drag;
+        }
+        
+        .title-button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .close-button {
+            background-color: #ff5f57;
+        }
+        
+        .minimize-button {
+            background-color: #ffbd2e;
+        }
+        
+        .maximize-button {
+            background-color: #28ca42;
+        }
+        
+        .content-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
         }
         
         .container {
@@ -276,8 +330,17 @@ export class QuickCapturePanel {
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>DevMemory - Quick Capture</h1>
+    <div class="title-bar">
+        <span>DevMemory - Quick Capture</span>
+        <div class="title-bar-buttons">
+            <button class="title-button minimize-button" onclick="minimizeWindow()" title="Minimize"></button>
+            <button class="title-button maximize-button" onclick="maximizeWindow()" title="Maximize"></button>
+            <button class="title-button close-button" onclick="closeWindow()" title="Close"></button>
+        </div>
+    </div>
+    
+    <div class="content-area">
+        <div class="container">
         
         <div class="tabs">
             <div class="tab active" onclick="switchTab('capture')">Capture</div>
@@ -353,6 +416,20 @@ export class QuickCapturePanel {
     </div>
     
     <script>
+        // Window controls
+        function closeWindow() {
+            vscode.postMessage({ command: 'closePanel' });
+        }
+        
+        function minimizeWindow() {
+            // VS Code webview panels don't support minimize, so we'll just hide
+            vscode.postMessage({ command: 'hidePanel' });
+        }
+        
+        function maximizeWindow() {
+            // VS Code webview panels don't support maximize/restore toggle
+            // This is more of a visual element for the custom title bar look
+        }
         const vscode = acquireVsCodeApi();
         
         // Tab switching
