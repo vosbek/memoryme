@@ -17,6 +17,18 @@ module.exports = (env, argv) => {
       alias: {
         '@': path.resolve(__dirname, 'src'),
       },
+      fallback: {
+        "global": require.resolve("global/window"),
+        "buffer": require.resolve("buffer"),
+        "process": require.resolve("process/browser"),
+        "path": require.resolve("path-browserify"),
+        "fs": false,
+        "crypto": require.resolve("crypto-browserify"),
+        "stream": require.resolve("stream-browserify"),
+        "util": require.resolve("util"),
+        "url": require.resolve("url"),
+        "querystring": require.resolve("querystring-es3")
+      },
     },
     module: {
       rules: [
@@ -43,6 +55,11 @@ module.exports = (env, argv) => {
       new HtmlWebpackPlugin({
         template: './src/renderer/index.html',
         filename: 'index.html',
+      }),
+      new (require('webpack').ProvidePlugin)({
+        global: 'global/window',
+        Buffer: ['buffer', 'Buffer'],
+        process: 'process/browser',
       }),
     ],
     devServer: {
